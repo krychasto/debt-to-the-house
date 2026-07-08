@@ -56,6 +56,8 @@ var background_shade: ColorRect
 var chip_layer: Control
 var flash_overlay: ColorRect
 var result_burst_label: Label
+var debug_panel: PanelContainer
+var debug_label: Label
 var active_chips: Array[Control] = []
 var reward_buttons: Array[Button] = []
 var reward_card_views: Array[Control] = []
@@ -166,6 +168,7 @@ func _build_ui() -> void:
 	root.add_child(_build_controls())
 	add_child(_build_relic_drawer())
 	add_child(_build_reward_overlay())
+	add_child(_build_debug_panel())
 
 
 func _build_header() -> Control:
@@ -647,6 +650,39 @@ func _build_synergy_panel() -> Control:
 	return synergy_panel
 
 
+func _build_debug_panel() -> Control:
+	debug_panel = PanelContainer.new()
+	debug_panel.visible = false
+	debug_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	debug_panel.custom_minimum_size = Vector2(330, 360)
+	debug_panel.anchor_left = 0.0
+	debug_panel.anchor_right = 0.0
+	debug_panel.anchor_top = 0.0
+	debug_panel.anchor_bottom = 0.0
+	debug_panel.offset_left = 18
+	debug_panel.offset_top = 90
+	debug_panel.offset_right = 348
+	debug_panel.offset_bottom = 450
+	debug_panel.add_theme_stylebox_override("panel", _make_style(Color(0.02, 0.01, 0.04, 0.88), CYAN, 1, 8))
+
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 8)
+	margin.add_theme_constant_override("margin_top", 8)
+	margin.add_theme_constant_override("margin_right", 8)
+	margin.add_theme_constant_override("margin_bottom", 8)
+	debug_panel.add_child(margin)
+
+	debug_label = Label.new()
+	debug_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	debug_label.add_theme_font_size_override("font_size", 12)
+	debug_label.add_theme_color_override("font_color", Color(0.88, 1.0, 0.96))
+	debug_label.add_theme_color_override("font_outline_color", INK)
+	debug_label.add_theme_constant_override("outline_size", 2)
+	margin.add_child(debug_label)
+
+	return debug_panel
+
+
 func _build_controls() -> Control:
 	var panel := PanelContainer.new()
 	panel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
@@ -1019,15 +1055,21 @@ func _get_chip_label(index: int) -> String:
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
 		match event.keycode:
+			KEY_F1:
+				_toggle_debug_panel()
 			KEY_D:
-				if not deal_button.disabled:
-					_on_deal_pressed()
+				_debug_add_money()
+			KEY_R:
+				_debug_force_reward_screen()
+			KEY_S:
+				_debug_advance_stage()
+			KEY_B:
+				_debug_force_blackjack()
+			KEY_C:
+				_debug_clear_combo()
 			KEY_H:
 				if not hit_button.disabled:
 					_on_hit_pressed()
-			KEY_S:
-				if not stand_button.disabled:
-					_on_stand_pressed()
 			KEY_PLUS, KEY_EQUAL:
 				if not increase_bet_button.disabled:
 					_change_bet(5)
@@ -1037,6 +1079,63 @@ func _unhandled_input(event: InputEvent) -> void:
 			KEY_M:
 				if not max_bet_button.disabled:
 					_on_max_bet_pressed()
+
+
+func _toggle_debug_panel() -> void:
+	debug_panel.visible = not debug_panel.visible
+	_update_debug_panel()
+	print("[Debug] panel visible=%s" % str(debug_panel.visible))
+
+
+func _debug_add_money() -> void:
+	run_manager.money += 100
+	print("[Debug] add money +100 money=%d" % run_manager.money)
+	message_label.text = "DEBUG: +$100"
+	_update_ui()
+
+
+func _debug_force_reward_screen() -> void:
+	if is_reward_screen_open:
+		return
+
+	engine.reset_round()
+	_clear_bet_chips()
+	should_hide_dealer_hole = true
+	should_animate_dealer_reveal = false
+	current_reward_choices = RelicLibrary.get_reward_choices(3, run_manager.get_owned_relic_ids())
+	print("[Debug] force reward screen choices=%d" % current_reward_choices.size())
+	_show_reward_screen()
+	_update_ui()
+
+
+func _debug_advance_stage() -> void:
+	run_manager.advance_stage()
+	run_manager.rebuild_effective_state(engine.rules)
+	engine.reset_round()
+	_clear_bet_chips()
+	message_label.text = "DEBUG: Etap %d" % run_manager.stage
+	print("[Debug] force next stage=%d" % run_manager.stage)
+	_update_ui()
+
+
+func _debug_force_blackjack() -> void:
+	if engine.current_bet <= 0:
+		engine.current_bet = clampi(int(bet_input.value), 1, max(1, run_manager.money))
+
+	engine.is_round_active = false
+	should_hide_dealer_hole = false
+	print("[Debug] force blackjack result bet=%d" % engine.current_bet)
+	_apply_round_result(BlackjackResult.PLAYER_BLACKJACK)
+	_update_ui()
+
+
+func _debug_clear_combo() -> void:
+	run_manager.combo_count = 0
+	run_manager.last_combo_delta = 0
+	run_manager.last_combo_was_reset = true
+	message_label.text = "DEBUG: combo wyczyszczone"
+	print("[Debug] clear combo")
+	_update_ui()
 
 
 func _on_decrease_bet_pressed() -> void:
@@ -1152,6 +1251,7 @@ func _on_reward_card_pressed(card: Button) -> void:
 
 
 func _complete_reward_choice(relic: RelicData) -> void:
+	print("[Debug] reward selected id=%s name=%s stage_before=%d" % [relic.id, relic.display_name, run_manager.stage])
 	run_manager.advance_stage()
 	run_manager.rebuild_effective_state(engine.rules)
 	engine.reset_round()
@@ -1164,6 +1264,7 @@ func _complete_reward_choice(relic: RelicData) -> void:
 	reward_message_label.visible = false
 	if run_manager.is_stage_success():
 		message_label.text = "DŁUG SPŁACONY"
+		print("[Debug] stage success remains after reward stage=%d money=%d debt=%d" % [run_manager.stage, run_manager.money, run_manager.debt_target])
 		_update_ui()
 		_start_stage_clear_feedback()
 		return
@@ -1223,6 +1324,7 @@ func _apply_round_result(result: String) -> void:
 	if stage_cleared:
 		_start_stage_clear_feedback()
 	elif game_lost:
+		print("[Debug] game over money=%d hands_left=%d stage=%d" % [run_manager.money, run_manager.hands_left, run_manager.stage])
 		_start_game_over_feedback()
 
 
@@ -1370,6 +1472,7 @@ func _update_ui() -> void:
 	_update_relic_drawer()
 	_update_synergy_panel()
 	bet_input.editable = not engine.is_round_active and not is_dealer_sequence_playing
+	_update_debug_panel()
 
 
 func _get_dealer_score_text(dealer_value: int) -> String:
@@ -1432,6 +1535,44 @@ func _update_synergy_panel() -> void:
 		label.add_theme_color_override("font_outline_color", INK)
 		label.add_theme_constant_override("outline_size", 3)
 		synergy_list.add_child(label)
+
+
+func _update_debug_panel() -> void:
+	if not is_instance_valid(debug_panel) or not is_instance_valid(debug_label) or not debug_panel.visible:
+		return
+
+	debug_label.text = "\n".join([
+		"DEBUG TOOLS",
+		"F1 panel | D +$100 | R reward | S stage | B blackjack | C combo 0",
+		"",
+		"Stage: %d" % run_manager.stage,
+		"Money: $%d" % run_manager.money,
+		"Debt target: $%d" % run_manager.debt_target,
+		"Hands left: %d" % run_manager.hands_left,
+		"Tokens: %d" % run_manager.tokens,
+		"Combo: %s" % run_manager.get_combo_display_text(),
+		"Owned relics: %d" % run_manager.relics.size(),
+		"Active synergies: %s" % _get_debug_synergy_text(),
+		"",
+		"Rules",
+		"Target score: %d" % engine.rules.target_score,
+		"Dealer stand: %d" % engine.rules.dealer_stand_score,
+		"Blackjack payout: %.2f" % engine.rules.blackjack_payout_multiplier,
+		"Win payout: %.2f" % engine.rules.win_payout_multiplier,
+		"Ace high: %d" % engine.rules.ace_high_value,
+		"Face value: %d" % engine.rules.face_card_value,
+	])
+
+
+func _get_debug_synergy_text() -> String:
+	if run_manager.active_synergies.is_empty():
+		return "none"
+
+	var names := PackedStringArray()
+	for synergy: SynergyData in run_manager.active_synergies:
+		names.append("%s L%d" % [synergy.display_name, synergy.level])
+
+	return ", ".join(names)
 
 
 func _create_owned_relic_view(relic: RelicData) -> Control:

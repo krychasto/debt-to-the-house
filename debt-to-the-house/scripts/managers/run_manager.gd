@@ -43,6 +43,7 @@ func apply_result(result: String, bet: int, rules: BlackjackRules) -> int:
 	var payout := calculate_payout(result, bet, rules)
 	money += payout
 	_update_combo(result)
+	print("[RunManager] apply payout result=%s bet=%d payout=%d money=%d combo=%d" % [result, bet, payout, money, combo_count])
 	return payout
 
 
@@ -68,6 +69,7 @@ func advance_stage() -> void:
 	hands_left = STARTING_HANDS_LEFT
 	base_debt_target += STAGE_DEBT_INCREASE
 	_refresh_debt_target()
+	print("[RunManager] advance stage=%d debt_target=%d tokens=%d" % [stage, debt_target, tokens])
 
 
 func reset_run() -> void:
@@ -88,6 +90,7 @@ func reset_run() -> void:
 func add_relic(relic: RelicData, rules: BlackjackRules) -> void:
 	relics.append(relic)
 	rebuild_effective_state(rules)
+	print("[RunManager] relic added id=%s name=%s total=%d" % [relic.id, relic.display_name, relics.size()])
 
 
 func rebuild_effective_state(rules: BlackjackRules) -> void:
@@ -102,6 +105,7 @@ func rebuild_effective_state(rules: BlackjackRules) -> void:
 	for synergy: SynergyData in active_synergies:
 		if synergy.is_new:
 			newly_discovered_synergies.append(synergy)
+			print("[RunManager] synergy discovered id=%s name=%s level=%d" % [synergy.id, synergy.display_name, synergy.level])
 
 	SynergyManager.apply_to_rules(active_synergies, rules)
 	_refresh_debt_target()
