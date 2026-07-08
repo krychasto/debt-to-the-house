@@ -613,6 +613,8 @@ func _build_synergy_panel() -> Control:
 	synergy_panel = PanelContainer.new()
 	synergy_panel.visible = false
 	synergy_panel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	synergy_panel.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	synergy_panel.custom_minimum_size = Vector2(560, 68)
 	synergy_panel.rotation_degrees = -0.25
 	synergy_panel.add_theme_stylebox_override("panel", _make_style(Color(0.03, 0.01, 0.05, 0.50), Color(1.0, 0.43, 0.95, 0.55), 1, 8))
 
@@ -629,9 +631,18 @@ func _build_synergy_panel() -> Control:
 	title.add_theme_constant_override("outline_size", 3)
 	box.add_child(title)
 
+	var scroll := ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(520, 34)
+	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	box.add_child(scroll)
+
 	synergy_list = VBoxContainer.new()
 	synergy_list.add_theme_constant_override("separation", 2)
-	box.add_child(synergy_list)
+	synergy_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(synergy_list)
 
 	return synergy_panel
 
