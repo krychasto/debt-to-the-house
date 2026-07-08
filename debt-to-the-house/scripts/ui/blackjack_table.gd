@@ -5,11 +5,18 @@ const CARD_SIZE := Vector2(92, 126)
 const TABLE_TEXTURE := preload("res://assets/ui/table_felt.png")
 const CARD_BACK_TEXTURE := preload("res://assets/ui/card_back.png")
 const CARD_FRONT_TEXTURE := preload("res://assets/ui/card_front.png")
+const NUMBER_POPUP_SCENE := preload("res://scenes/ui/NumberPopup.tscn")
 const CARD_HOVER_OFFSET := Vector2(0, -8)
 const CARD_ENTER_TIME := 0.18
 const CARD_HOVER_TIME := 0.10
 const CARD_TILT_RANGE := 2.5
 const RELIC_DRAWER_WIDTH := 286.0
+const CHIP_SIZE := Vector2(42, 42)
+const CHIP_RADIUS := 21.0
+const CHIP_COLLISION_RADIUS := 18.0
+const CHIP_ATTRACTION := 7.0
+const CHIP_FRICTION := 0.12
+const CHIP_BOUNCE := 0.55
 const GOLD := Color(1.0, 0.78, 0.16)
 const CYAN := Color(0.18, 0.94, 0.88)
 const PINK := Color(1.0, 0.18, 0.55)
@@ -39,15 +46,19 @@ var relics_button: Button
 var relic_drawer_panel: PanelContainer
 var relic_drawer_list: VBoxContainer
 var reward_panel: PanelContainer
+var table_area_root: VBoxContainer
+var background_shade: ColorRect
 var chip_layer: Control
 var flash_overlay: ColorRect
 var result_burst_label: Label
+var active_chips: Array[Control] = []
 var reward_buttons: Array[Button] = []
 var current_reward_choices: Array[RelicData] = []
 var last_player_card_count: int = 0
 var last_dealer_card_count: int = 0
 var is_relic_drawer_pinned: bool = false
 var is_dealer_sequence_playing: bool = false
+var is_stage_clear_sequence_playing: bool = false
 var should_hide_dealer_hole: bool = true
 var should_animate_dealer_reveal: bool = false
 
@@ -58,6 +69,10 @@ func _ready() -> void:
 	_update_ui()
 
 
+func _process(delta: float) -> void:
+	_update_chip_physics(delta)
+
+
 func _build_ui() -> void:
 	var background := TextureRect.new()
 	background.texture = TABLE_TEXTURE
@@ -66,10 +81,10 @@ func _build_ui() -> void:
 	background.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(background)
 
-	var shade := ColorRect.new()
-	shade.color = Color(0.04, 0.00, 0.07, 0.08)
-	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
-	add_child(shade)
+	background_shade = ColorRect.new()
+	background_shade.color = Color(0.04, 0.00, 0.07, 0.08)
+	background_shade.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(background_shade)
 
 	chip_layer = Control.new()
 	chip_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -110,20 +125,20 @@ func _build_ui() -> void:
 
 	root.add_child(_build_header())
 
-	var table_area := VBoxContainer.new()
-	table_area.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	table_area.add_theme_constant_override("separation", 8)
-	root.add_child(table_area)
+	table_area_root = VBoxContainer.new()
+	table_area_root.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	table_area_root.add_theme_constant_override("separation", 8)
+	root.add_child(table_area_root)
 
 	var dealer_panel := _build_hand_panel("Dealer", true)
-	table_area.add_child(dealer_panel)
+	table_area_root.add_child(dealer_panel)
 
 	var center_panel := PanelContainer.new()
 	center_panel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	center_panel.custom_minimum_size = Vector2(620, 44)
 	center_panel.rotation_degrees = -0.35
 	center_panel.add_theme_stylebox_override("panel", _make_style(Color(0.03, 0.01, 0.06, 0.30), PINK, 1, 8))
-	table_area.add_child(center_panel)
+	table_area_root.add_child(center_panel)
 
 	message_label = Label.new()
 	message_label.text = "Set a bet and deal."
@@ -138,7 +153,7 @@ func _build_ui() -> void:
 	center_panel.add_child(message_label)
 
 	var player_panel := _build_hand_panel("Player", false)
-	table_area.add_child(player_panel)
+	table_area_root.add_child(player_panel)
 
 	root.add_child(_build_reward_panel())
 	root.add_child(_build_controls())
@@ -526,31 +541,107 @@ func _tween_button_scale(button: Button, target_scale: Vector2, duration: float)
 	tween.tween_property(button, "scale", target_scale, duration).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 
+func _update_chip_physics(delta: float) -> void:
+	if active_chips.is_empty():
+		return
+
+	for index: int in range(active_chips.size() - 1, -1, -1):
+		var chip := active_chips[index]
+		if not is_instance_valid(chip):
+			active_chips.remove_at(index)
+			continue
+
+		var delay := float(chip.get_meta("delay", 0.0))
+		if delay > 0.0:
+			delay = maxf(delay - delta, 0.0)
+			chip.set_meta("delay", delay)
+			continue
+
+		if chip.modulate.a < 1.0:
+			chip.modulate.a = minf(chip.modulate.a + delta * 10.0, 1.0)
+
+		if chip.scale.x < 1.0:
+			var next_scale := minf(chip.scale.x + delta * 4.8, 1.0)
+			chip.scale = Vector2(next_scale, next_scale)
+
+		var velocity: Vector2 = chip.get_meta("velocity", Vector2.ZERO)
+		var home: Vector2 = chip.get_meta("home", chip.position)
+		var to_home := home - chip.position
+		velocity += to_home * CHIP_ATTRACTION * delta
+		velocity *= pow(CHIP_FRICTION, delta)
+
+		if velocity.length() < 5.0 and to_home.length() < 5.0:
+			velocity = Vector2.ZERO
+			chip.position = chip.position.lerp(home, minf(delta * 6.0, 1.0))
+
+		chip.position += velocity * delta
+		chip.rotation_degrees += float(chip.get_meta("spin", 0.0)) * delta * clampf(velocity.length() / 520.0, 0.0, 1.0)
+		chip.set_meta("velocity", velocity)
+
+	_resolve_chip_collisions()
+
+
+func _resolve_chip_collisions() -> void:
+	for first_index: int in range(active_chips.size()):
+		var first_chip := active_chips[first_index]
+		if not is_instance_valid(first_chip):
+			continue
+
+		for second_index: int in range(first_index + 1, active_chips.size()):
+			var second_chip := active_chips[second_index]
+			if not is_instance_valid(second_chip):
+				continue
+
+			var first_center := first_chip.position + Vector2(CHIP_RADIUS, CHIP_RADIUS)
+			var second_center := second_chip.position + Vector2(CHIP_RADIUS, CHIP_RADIUS)
+			var delta_position := first_center - second_center
+			var distance := delta_position.length()
+			var minimum_distance := CHIP_COLLISION_RADIUS * 2.0
+			if distance >= minimum_distance:
+				continue
+
+			var normal := Vector2.RIGHT.rotated(randf_range(0.0, TAU)) if distance <= 0.01 else delta_position / distance
+			var overlap := minimum_distance - distance
+			first_chip.position += normal * overlap * 0.5
+			second_chip.position -= normal * overlap * 0.5
+
+			var first_velocity: Vector2 = first_chip.get_meta("velocity", Vector2.ZERO)
+			var second_velocity: Vector2 = second_chip.get_meta("velocity", Vector2.ZERO)
+			var relative_velocity := first_velocity - second_velocity
+			var impact := relative_velocity.dot(normal)
+			if impact < 0.0:
+				var impulse := normal * impact * CHIP_BOUNCE
+				first_velocity -= impulse
+				second_velocity += impulse
+				first_chip.set_meta("velocity", first_velocity)
+				second_chip.set_meta("velocity", second_velocity)
+
+
 func _throw_bet_chips(bet: int) -> void:
 	_clear_bet_chips()
 
 	var viewport_size := get_viewport_rect().size
-	var chip_count := clampi(int(round(float(bet) / 10.0)), 1, 6)
+	var chip_count := clampi(int(ceil(float(bet) / 5.0)), 1, 18)
 	var target_center := Vector2(viewport_size.x * 0.5, viewport_size.y * 0.52)
-	var start_center := Vector2(viewport_size.x * 0.5, viewport_size.y - 70.0)
+	var start_center := Vector2(viewport_size.x * 0.5, viewport_size.y + 44.0)
 
 	for index: int in range(chip_count):
 		var chip := _create_chip(index)
 		var delay := index * 0.035
-		var start_position := start_center + Vector2(randf_range(-42.0, 42.0), randf_range(0.0, 18.0))
-		var target_position := target_center + Vector2((index - chip_count * 0.5) * 18.0 + randf_range(-8.0, 8.0), randf_range(-12.0, 12.0))
+		var start_position := start_center + Vector2(randf_range(-80.0, 80.0), randf_range(0.0, 34.0))
+		var target_position := target_center + Vector2((index - chip_count * 0.5) * 10.0 + randf_range(-26.0, 26.0), randf_range(-24.0, 24.0))
+		var launch_velocity := (target_position - start_position) * randf_range(3.6, 4.6) + Vector2(randf_range(-150.0, 150.0), randf_range(-70.0, 30.0))
 		chip.position = start_position
 		chip.rotation_degrees = randf_range(-24.0, 24.0)
 		chip.scale = Vector2(0.45, 0.45)
 		chip.modulate = Color(1.0, 1.0, 1.0, 0.0)
+		chip.set_meta("velocity", launch_velocity)
+		chip.set_meta("home", target_position)
+		chip.set_meta("delay", delay)
+		chip.set_meta("spin", randf_range(-260.0, 260.0))
+		chip.set_meta("is_chip", true)
 		chip_layer.add_child(chip)
-
-		var tween := create_tween()
-		tween.set_parallel(true)
-		tween.tween_property(chip, "position", target_position, 0.26).set_delay(delay).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-		tween.tween_property(chip, "scale", Vector2.ONE, 0.22).set_delay(delay).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-		tween.tween_property(chip, "rotation_degrees", randf_range(-9.0, 9.0), 0.26).set_delay(delay).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
-		tween.tween_property(chip, "modulate:a", 1.0, 0.08).set_delay(delay)
+		active_chips.append(chip)
 
 	var pot_label := Label.new()
 	pot_label.name = "PotLabel"
@@ -567,7 +658,7 @@ func _throw_bet_chips(bet: int) -> void:
 	chip_layer.add_child(pot_label)
 
 	var label_tween := create_tween()
-	label_tween.tween_interval(0.18)
+	label_tween.tween_interval(0.34)
 	label_tween.tween_property(pot_label, "modulate:a", 1.0, 0.08)
 	label_tween.parallel().tween_property(pot_label, "scale", Vector2.ONE, 0.14).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
@@ -576,6 +667,7 @@ func _collect_bet_chips(result: String) -> void:
 	if chip_layer.get_child_count() == 0:
 		return
 
+	active_chips.clear()
 	var viewport_size := get_viewport_rect().size
 	var exit_position := Vector2(viewport_size.x * 0.5, -60.0)
 	if result == BlackjackResult.PLAYER_BUST or result == BlackjackResult.DEALER_WIN or result == BlackjackResult.DEALER_BLACKJACK:
@@ -597,41 +689,73 @@ func _clear_bet_chips() -> void:
 	if not is_instance_valid(chip_layer):
 		return
 
+	active_chips.clear()
 	_clear_children(chip_layer)
 
 
 func _create_chip(index: int) -> Control:
 	var chip := Control.new()
-	chip.custom_minimum_size = Vector2(42, 42)
-	chip.size = Vector2(42, 42)
-	chip.pivot_offset = Vector2(21, 21)
+	chip.custom_minimum_size = CHIP_SIZE
+	chip.size = CHIP_SIZE
+	chip.pivot_offset = CHIP_SIZE * 0.5
 	chip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var chip_color := _get_chip_color(index)
 
 	var shadow := PanelContainer.new()
-	shadow.position = Vector2(4, 5)
-	shadow.size = Vector2(38, 38)
-	shadow.add_theme_stylebox_override("panel", _make_style(Color(0.0, 0.0, 0.0, 0.34), Color(1.0, 1.0, 1.0, 0.0), 0, 20))
+	shadow.position = Vector2(5, 7)
+	shadow.size = Vector2(38, 34)
+	shadow.add_theme_stylebox_override("panel", _make_style(Color(0.0, 0.0, 0.0, 0.42), Color(1.0, 1.0, 1.0, 0.0), 0, 20))
 	chip.add_child(shadow)
+
+	var side := PanelContainer.new()
+	side.position = Vector2(1, 4)
+	side.size = Vector2(40, 38)
+	side.add_theme_stylebox_override("panel", _make_style(chip_color.darkened(0.35), Color(0.03, 0.0, 0.04, 0.70), 1, 20))
+	chip.add_child(side)
 
 	var outer := PanelContainer.new()
 	outer.size = Vector2(40, 40)
-	outer.add_theme_stylebox_override("panel", _make_style(_get_chip_color(index), Color(1.0, 0.94, 0.72), 2, 20))
+	outer.add_theme_stylebox_override("panel", _make_style(chip_color, Color(1.0, 0.94, 0.72), 2, 20))
 	chip.add_child(outer)
 
+	for notch_index: int in range(8):
+		var notch := ColorRect.new()
+		notch.color = Color(1.0, 0.94, 0.72, 0.95)
+		notch.size = Vector2(4, 9)
+		notch.position = Vector2(18, 2)
+		notch.pivot_offset = Vector2(2, 19)
+		notch.rotation_degrees = notch_index * 45.0
+		chip.add_child(notch)
+
+	var inner_ring := PanelContainer.new()
+	inner_ring.position = Vector2(7, 7)
+	inner_ring.size = Vector2(26, 26)
+	inner_ring.add_theme_stylebox_override("panel", _make_style(chip_color.lightened(0.18), Color(0.03, 0.0, 0.04, 0.70), 1, 14))
+	chip.add_child(inner_ring)
+
 	var inner := PanelContainer.new()
-	inner.position = Vector2(9, 9)
-	inner.size = Vector2(22, 22)
-	inner.add_theme_stylebox_override("panel", _make_style(Color(0.98, 0.91, 0.70, 0.92), INK, 1, 12))
+	inner.position = Vector2(11, 11)
+	inner.size = Vector2(18, 18)
+	inner.add_theme_stylebox_override("panel", _make_style(Color(1.0, 0.92, 0.68, 0.96), INK, 1, 10))
 	chip.add_child(inner)
 
 	var mark := Label.new()
-	mark.text = "$"
+	mark.text = _get_chip_label(index)
 	mark.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	mark.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	mark.add_theme_font_size_override("font_size", 15)
+	mark.add_theme_font_size_override("font_size", 11)
 	mark.add_theme_color_override("font_color", INK)
+	mark.add_theme_color_override("font_outline_color", Color(1.0, 0.92, 0.68, 0.55))
+	mark.add_theme_constant_override("outline_size", 1)
 	mark.set_anchors_preset(Control.PRESET_FULL_RECT)
 	chip.add_child(mark)
+
+	var shine := ColorRect.new()
+	shine.color = Color(1.0, 1.0, 1.0, 0.30)
+	shine.position = Vector2(12, 7)
+	shine.size = Vector2(14, 4)
+	shine.rotation_degrees = -22.0
+	chip.add_child(shine)
 
 	return chip
 
@@ -646,6 +770,20 @@ func _get_chip_color(index: int) -> Color:
 			return GOLD
 
 	return Color(0.78, 0.38, 1.0)
+
+
+func _get_chip_label(index: int) -> String:
+	match index % 5:
+		0:
+			return "$1"
+		1:
+			return "$5"
+		2:
+			return "$10"
+		3:
+			return "$25"
+
+	return "$50"
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -681,13 +819,13 @@ func _on_increase_bet_pressed() -> void:
 
 func _on_max_bet_pressed() -> void:
 	bet_input.value = max(1, run_manager.money)
-	_pulse_control(bet_input)
+	JuiceFx.pulse_node(bet_input, 1.08, 0.16)
 
 
 func _change_bet(amount: int) -> void:
 	var next_bet := clampi(int(bet_input.value) + amount, 1, max(1, run_manager.money))
 	bet_input.value = next_bet
-	_pulse_control(bet_input)
+	JuiceFx.pulse_node(bet_input, 1.08, 0.16)
 
 
 func _on_deal_pressed() -> void:
@@ -769,8 +907,11 @@ func _on_retry_pressed() -> void:
 	current_reward_choices.clear()
 	is_relic_drawer_pinned = false
 	is_dealer_sequence_playing = false
+	is_stage_clear_sequence_playing = false
 	should_hide_dealer_hole = true
 	should_animate_dealer_reveal = false
+	if is_instance_valid(background_shade):
+		background_shade.color = Color(0.04, 0.00, 0.07, 0.08)
 	message_label.text = "New run. Set a bet and deal."
 	_update_ui()
 
@@ -782,6 +923,7 @@ func _has_opening_blackjack() -> bool:
 func _apply_round_result(result: String) -> void:
 	var money_before_payout := run_manager.money
 	var payout := run_manager.apply_result(result, engine.current_bet, engine.rules)
+	var money_delta := run_manager.money - money_before_payout
 	message_label.text = "%s Payout: $%d. Money: $%d -> $%d." % [
 		_get_result_text(result),
 		payout,
@@ -789,14 +931,60 @@ func _apply_round_result(result: String) -> void:
 		run_manager.money,
 	]
 
-	if run_manager.is_stage_success():
-		message_label.text += " Stage cleared. Take the next stage."
-	elif run_manager.is_game_over():
-		message_label.text += " Target missed. Retry the run."
+	var stage_cleared := run_manager.is_stage_success()
+	var game_lost := run_manager.is_game_over()
+	if stage_cleared:
+		message_label.text = "DŁUG SPŁACONY"
+	elif game_lost:
+		message_label.text = "KASYNO WYGRYWA"
 
+	_spawn_money_popup(money_delta)
 	_pulse_message()
 	_play_result_feedback(result, payout)
 	_collect_bet_chips(result)
+	if stage_cleared:
+		_start_stage_clear_feedback()
+	elif game_lost:
+		_start_game_over_feedback()
+
+
+func _spawn_money_popup(delta: int) -> void:
+	if delta == 0:
+		return
+
+	var popup := NUMBER_POPUP_SCENE.instantiate() as NumberPopup
+	var style := NumberPopup.PopupStyle.POSITIVE if delta > 0 else NumberPopup.PopupStyle.NEGATIVE
+	var prefix := "+" if delta > 0 else ""
+	popup.setup("%s$%d" % [prefix, delta], style)
+	popup.position = money_label.get_global_rect().get_center() + Vector2(-70.0, 12.0)
+	add_child(popup)
+	popup.play()
+
+
+func _start_stage_clear_feedback() -> void:
+	if is_stage_clear_sequence_playing:
+		return
+
+	is_stage_clear_sequence_playing = true
+	JuiceFx.pulse_node(money_label, 1.22, 0.26)
+	JuiceFx.pulse_node(debt_label, 1.24, 0.28)
+	_flash_screen(Color(1.0, 0.82, 0.18, 0.30))
+	_show_result_burst("DŁUG SPŁACONY", GOLD, 1.18)
+	JuiceFx.delayed_call(self, 0.82, Callable(self, "_finish_stage_clear_feedback"))
+
+
+func _finish_stage_clear_feedback() -> void:
+	is_stage_clear_sequence_playing = false
+	_update_ui()
+	JuiceFx.pop_in(reward_panel, 0.22)
+
+
+func _start_game_over_feedback() -> void:
+	JuiceFx.shake_node(table_area_root, 11.0, 0.28)
+	JuiceFx.shake_node(message_label, 9.0, 0.25)
+	_show_result_burst("KASYNO WYGRYWA", PINK, 1.04)
+	if is_instance_valid(background_shade):
+		background_shade.color = Color(0.02, 0.00, 0.03, 0.34)
 
 
 func _update_ui() -> void:
@@ -823,7 +1011,7 @@ func _update_ui() -> void:
 
 	var stage_ready_to_advance := run_manager.is_stage_success() and not engine.is_round_active
 	var game_over := run_manager.is_game_over() and not engine.is_round_active
-	if stage_ready_to_advance and current_reward_choices.is_empty():
+	if stage_ready_to_advance and not is_stage_clear_sequence_playing and current_reward_choices.is_empty():
 		current_reward_choices = RelicLibrary.get_reward_choices(3, run_manager.get_owned_relic_ids())
 
 	deal_button.disabled = engine.is_round_active or is_dealer_sequence_playing or stage_ready_to_advance or game_over or not run_manager.can_play_hand()
@@ -834,7 +1022,7 @@ func _update_ui() -> void:
 	decrease_bet_button.disabled = engine.is_round_active or is_dealer_sequence_playing or game_over or stage_ready_to_advance
 	increase_bet_button.disabled = engine.is_round_active or is_dealer_sequence_playing or game_over or stage_ready_to_advance
 	max_bet_button.disabled = engine.is_round_active or is_dealer_sequence_playing or game_over or stage_ready_to_advance
-	reward_panel.visible = stage_ready_to_advance and not game_over
+	reward_panel.visible = stage_ready_to_advance and not game_over and not is_stage_clear_sequence_playing
 	relics_button.text = _get_relics_text()
 	_update_reward_buttons()
 	_update_relic_drawer()
@@ -952,7 +1140,7 @@ func _render_hand_cards(row: HBoxContainer, hand: Hand, hide_hole_card: bool, pr
 	for index: int in range(hand.cards.size()):
 		var hidden := hide_hole_card and index == 1
 		var should_animate := index >= previous_card_count or (animate_hole_reveal and index == 1)
-		row.add_child(_create_card_view(hand.cards[index], hidden, should_animate))
+		row.add_child(_create_card_view(hand.cards[index], hidden, should_animate, index * 0.07))
 
 
 func _create_empty_slot() -> Control:
@@ -973,7 +1161,7 @@ func _create_empty_slot() -> Control:
 	return slot
 
 
-func _create_card_view(card: CardData, hidden: bool, animate_enter: bool = true) -> Control:
+func _create_card_view(card: CardData, hidden: bool, animate_enter: bool = true, animate_delay: float = 0.0) -> Control:
 	var card_slot := Control.new()
 	card_slot.custom_minimum_size = CARD_SIZE
 	card_slot.size = CARD_SIZE
@@ -1007,7 +1195,7 @@ func _create_card_view(card: CardData, hidden: bool, animate_enter: bool = true)
 		back_texture.custom_minimum_size = Vector2.ZERO
 		visual_layer.add_child(back_texture)
 		if animate_enter:
-			call_deferred("_animate_card_enter", visual_layer)
+			call_deferred("_animate_card_enter", visual_layer, animate_delay)
 		return card_slot
 
 	var card_root := Control.new()
@@ -1040,22 +1228,31 @@ func _create_card_view(card: CardData, hidden: bool, animate_enter: bool = true)
 	card_root.add_child(center_symbol)
 
 	if animate_enter:
-		call_deferred("_animate_card_enter", visual_layer)
+		call_deferred("_animate_card_enter", visual_layer, animate_delay)
 	return card_slot
 
 
-func _animate_card_enter(visual_layer: Control) -> void:
+func _animate_card_enter(visual_layer: Control, delay: float = 0.0) -> void:
 	if not is_instance_valid(visual_layer):
 		return
 
 	var final_rotation := visual_layer.rotation_degrees
-	visual_layer.rotation_degrees = final_rotation + randf_range(-7.0, 7.0)
+	var final_global_position := visual_layer.global_position
+	var viewport_size := get_viewport_rect().size
+	var deck_global_position := Vector2(viewport_size.x - 150.0, viewport_size.y * 0.50)
+	visual_layer.global_position = deck_global_position
+	visual_layer.rotation_degrees = final_rotation + randf_range(-13.0, 13.0)
 
 	var tween := create_tween()
 	tween.set_parallel(true)
-	tween.tween_property(visual_layer, "scale", Vector2.ONE, CARD_ENTER_TIME).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tween.tween_property(visual_layer, "modulate:a", 1.0, CARD_ENTER_TIME * 0.8)
-	tween.tween_property(visual_layer, "rotation_degrees", final_rotation, CARD_ENTER_TIME).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_property(visual_layer, "global_position", final_global_position, CARD_ENTER_TIME + 0.06).set_delay(delay).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	tween.tween_property(visual_layer, "scale", Vector2.ONE, CARD_ENTER_TIME + 0.04).set_delay(delay).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_property(visual_layer, "modulate:a", 1.0, CARD_ENTER_TIME * 0.8).set_delay(delay)
+	tween.tween_property(visual_layer, "rotation_degrees", final_rotation, CARD_ENTER_TIME + 0.04).set_delay(delay).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.chain().tween_callback(func() -> void:
+		if is_instance_valid(visual_layer):
+			JuiceFx.pulse_node(visual_layer, 1.05, 0.10)
+	)
 
 
 func _on_card_mouse_entered(visual_layer: Control) -> void:
@@ -1079,27 +1276,29 @@ func _on_card_mouse_exited(visual_layer: Control) -> void:
 
 
 func _pulse_message() -> void:
-	_pulse_control(message_label)
+	JuiceFx.pulse_node(message_label, 1.05, 0.18)
 
 
 func _play_result_feedback(result: String, payout: int) -> void:
 	match result:
 		BlackjackResult.PLAYER_BLACKJACK:
 			_flash_screen(Color(1.0, 0.77, 0.16, 0.30))
-			_show_result_burst("BLACKJACK! +$%d" % payout, Color(1.0, 0.82, 0.18))
-			_pulse_control(money_label)
-			_pulse_control(debt_label)
+			_show_result_burst("BLACKJACK! +$%d" % payout, Color(1.0, 0.82, 0.18), 1.25)
+			JuiceFx.shake_node(result_burst_label, 8.0, 0.18)
+			JuiceFx.flash_node(money_label, Color(1.0, 0.96, 0.36), 0.25)
+			JuiceFx.pulse_node(money_label, 1.18, 0.22)
+			JuiceFx.pulse_node(debt_label, 1.14, 0.20)
 		BlackjackResult.PLAYER_WIN, BlackjackResult.DEALER_BUST:
 			_flash_screen(Color(0.16, 0.94, 0.84, 0.22))
-			_show_result_burst("+$%d" % payout, Color(0.20, 1.0, 0.84))
-			_pulse_control(money_label)
+			_show_result_burst("WIN +$%d" % payout, Color(0.20, 1.0, 0.84), 1.0)
+			JuiceFx.pulse_node(money_label, 1.12, 0.18)
 		BlackjackResult.PUSH:
 			_flash_screen(Color(0.70, 0.82, 1.0, 0.16))
-			_show_result_burst("PUSH", Color(0.72, 0.86, 1.0))
+			_show_result_burst("PUSH", Color(0.72, 0.86, 1.0), 0.92)
 		BlackjackResult.DEALER_BLACKJACK, BlackjackResult.DEALER_WIN, BlackjackResult.PLAYER_BUST:
 			_flash_screen(Color(1.0, 0.10, 0.28, 0.22))
-			_show_result_burst(_get_loss_burst_text(result), Color(1.0, 0.18, 0.36))
-			_shake_control(message_label)
+			_show_result_burst(_get_loss_burst_text(result), Color(1.0, 0.18, 0.36), 1.0)
+			JuiceFx.shake_node(message_label, 7.0, 0.22)
 
 
 func _flash_screen(color: Color) -> void:
@@ -1111,49 +1310,38 @@ func _flash_screen(color: Color) -> void:
 	tween.tween_property(flash_overlay, "modulate:a", 0.0, 0.30).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 
 
-func _show_result_burst(text: String, color: Color) -> void:
+func _show_result_burst(text: String, color: Color, intensity: float = 1.0) -> void:
 	if not is_instance_valid(result_burst_label):
 		return
 
 	result_burst_label.text = text
+	result_burst_label.add_theme_font_size_override("font_size", int(52.0 * intensity))
 	result_burst_label.visible = true
 	result_burst_label.pivot_offset = size * 0.5
 	result_burst_label.position = Vector2(0, 18)
-	result_burst_label.scale = Vector2(0.72, 0.72)
+	result_burst_label.scale = Vector2(0.62, 0.62)
 	result_burst_label.modulate = Color(color.r, color.g, color.b, 0.0)
 
 	var tween := create_tween()
 	tween.set_parallel(true)
-	tween.tween_property(result_burst_label, "position", Vector2.ZERO, 0.16).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tween.tween_property(result_burst_label, "scale", Vector2.ONE, 0.16).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_property(result_burst_label, "position", Vector2.ZERO, 0.18).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_property(result_burst_label, "scale", Vector2.ONE * intensity, 0.18).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	tween.tween_property(result_burst_label, "modulate:a", 1.0, 0.08)
-	tween.chain().tween_interval(0.42)
+	tween.chain().tween_interval(0.48)
 	tween.chain().tween_property(result_burst_label, "modulate:a", 0.0, 0.22).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
 	tween.tween_callback(func() -> void:
 		if is_instance_valid(result_burst_label):
 			result_burst_label.visible = false
+			result_burst_label.scale = Vector2.ONE
 	)
 
 
 func _shake_control(control: Control, strength: float = 7.0) -> void:
-	if not is_instance_valid(control):
-		return
-
-	var start_position := control.position
-	var tween := create_tween()
-	tween.tween_property(control, "position", start_position + Vector2(-strength, 0), 0.035)
-	tween.tween_property(control, "position", start_position + Vector2(strength, 0), 0.055)
-	tween.tween_property(control, "position", start_position + Vector2(-strength * 0.55, 0), 0.045)
-	tween.tween_property(control, "position", start_position, 0.055)
+	JuiceFx.shake_node(control, strength, 0.20)
 
 
 func _pulse_control(control: Control) -> void:
-	control.pivot_offset = control.size * 0.5
-	control.scale = Vector2.ONE
-
-	var tween := create_tween()
-	tween.tween_property(control, "scale", Vector2(1.04, 1.04), 0.08).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
-	tween.tween_property(control, "scale", Vector2.ONE, 0.12).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+	JuiceFx.pulse_node(control, 1.04, 0.20)
 
 
 func _create_corner_label(card: CardData, flipped: bool) -> Control:
