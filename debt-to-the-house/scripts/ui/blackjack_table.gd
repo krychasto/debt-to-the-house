@@ -3,6 +3,8 @@ extends Control
 const DEFAULT_BET := 10
 const CARD_SIZE := Vector2(92, 126)
 const TABLE_TEXTURE := preload("res://assets/ui/table_felt.png")
+const CARD_BACK_TEXTURE := preload("res://assets/ui/card_back.png")
+const CARD_FRONT_TEXTURE := preload("res://assets/ui/card_front.png")
 const CARD_HOVER_OFFSET := Vector2(0, -8)
 const CARD_ENTER_TIME := 0.18
 const CARD_HOVER_TIME := 0.10
@@ -14,10 +16,10 @@ const CHIP_COLLISION_RADIUS := 18.0
 const CHIP_ATTRACTION := 7.0
 const CHIP_FRICTION := 0.12
 const CHIP_BOUNCE := 0.55
-const GOLD := ThemeFactory.GOLD
-const CYAN := ThemeFactory.NEON_CYAN
+const GOLD := Color(1.0, 0.78, 0.16)
+const CYAN := Color(0.18, 0.94, 0.88)
 const PINK := Color(1.0, 0.18, 0.55)
-const INK := ThemeFactory.INK
+const INK := Color(0.03, 0.01, 0.05)
 
 var engine: BlackjackEngine = BlackjackEngine.new()
 var run_manager: RunManager = RunManager.new()
@@ -31,7 +33,6 @@ var dealer_score_label: Label
 var player_score_label: Label
 var synergy_panel: PanelContainer
 var synergy_list: VBoxContainer
-var table_shell: PanelContainer
 var dealer_cards_row: HBoxContainer
 var player_cards_row: HBoxContainer
 var message_label: Label
@@ -81,30 +82,16 @@ func _process(delta: float) -> void:
 
 func _build_ui() -> void:
 	var background := TextureRect.new()
-	background.texture = ThemeFactory.background_gradient()
+	background.texture = TABLE_TEXTURE
 	background.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	background.stretch_mode = TextureRect.STRETCH_SCALE
+	background.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	background.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(background)
 
-	var felt_texture := TextureRect.new()
-	felt_texture.texture = TABLE_TEXTURE
-	felt_texture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	felt_texture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	felt_texture.modulate = Color(0.18, 0.42, 0.28, 0.24)
-	felt_texture.set_anchors_preset(Control.PRESET_FULL_RECT)
-	add_child(felt_texture)
-
 	background_shade = ColorRect.new()
-	background_shade.color = Color(0.02, 0.00, 0.03, 0.20)
+	background_shade.color = Color(0.04, 0.00, 0.07, 0.08)
 	background_shade.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(background_shade)
-
-	var vignette := ColorRect.new()
-	vignette.color = Color(0.0, 0.0, 0.0, 0.18)
-	vignette.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	vignette.set_anchors_preset(Control.PRESET_FULL_RECT)
-	add_child(vignette)
 
 	chip_layer = Control.new()
 	chip_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -113,10 +100,10 @@ func _build_ui() -> void:
 
 	var margin := MarginContainer.new()
 	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
-	margin.add_theme_constant_override("margin_left", 26)
-	margin.add_theme_constant_override("margin_top", 18)
-	margin.add_theme_constant_override("margin_right", 62)
-	margin.add_theme_constant_override("margin_bottom", 16)
+	margin.add_theme_constant_override("margin_left", 22)
+	margin.add_theme_constant_override("margin_top", 16)
+	margin.add_theme_constant_override("margin_right", 58)
+	margin.add_theme_constant_override("margin_bottom", 14)
 	add_child(margin)
 
 	flash_overlay = ColorRect.new()
@@ -140,29 +127,15 @@ func _build_ui() -> void:
 	var root := VBoxContainer.new()
 	root.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	root.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	root.add_theme_constant_override("separation", 10)
+	root.add_theme_constant_override("separation", 6)
 	margin.add_child(root)
 
 	root.add_child(_build_header())
 
-	table_shell = PanelContainer.new()
-	table_shell.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	table_shell.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	table_shell.add_theme_stylebox_override("panel", ThemeFactory.table_style())
-	root.add_child(table_shell)
-
-	var table_margin := MarginContainer.new()
-	table_margin.add_theme_constant_override("margin_left", 18)
-	table_margin.add_theme_constant_override("margin_top", 12)
-	table_margin.add_theme_constant_override("margin_right", 18)
-	table_margin.add_theme_constant_override("margin_bottom", 12)
-	table_shell.add_child(table_margin)
-
 	table_area_root = VBoxContainer.new()
 	table_area_root.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	table_area_root.add_theme_constant_override("separation", 9)
-	table_margin.add_child(table_area_root)
-	_add_table_ornaments(table_shell)
+	table_area_root.add_theme_constant_override("separation", 8)
+	root.add_child(table_area_root)
 
 	var dealer_panel := _build_hand_panel("Krupier", true)
 	table_area_root.add_child(dealer_panel)
@@ -171,7 +144,7 @@ func _build_ui() -> void:
 	center_panel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	center_panel.custom_minimum_size = Vector2(620, 44)
 	center_panel.rotation_degrees = -0.35
-	center_panel.add_theme_stylebox_override("panel", ThemeFactory.message_style())
+	center_panel.add_theme_stylebox_override("panel", _make_style(Color(0.03, 0.01, 0.06, 0.30), PINK, 1, 8))
 	table_area_root.add_child(center_panel)
 
 	message_label = Label.new()
@@ -180,8 +153,8 @@ func _build_ui() -> void:
 	message_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	message_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	message_label.add_theme_font_size_override("font_size", 18)
-	message_label.add_theme_color_override("font_color", ThemeFactory.TEXT_CREAM)
-	message_label.add_theme_color_override("font_outline_color", INK)
+	message_label.add_theme_color_override("font_color", Color(1.0, 0.94, 0.80))
+	message_label.add_theme_color_override("font_outline_color", Color(0.02, 0.00, 0.03, 0.95))
 	message_label.add_theme_constant_override("outline_size", 5)
 	message_label.custom_minimum_size = Vector2(0, 36)
 	center_panel.add_child(message_label)
@@ -197,11 +170,11 @@ func _build_ui() -> void:
 
 func _build_header() -> Control:
 	var header := HBoxContainer.new()
-	header.add_theme_constant_override("separation", 10)
+	header.add_theme_constant_override("separation", 12)
 
 	var title_panel := PanelContainer.new()
 	title_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	title_panel.add_theme_stylebox_override("panel", ThemeFactory.hud_panel_style())
+	title_panel.add_theme_stylebox_override("panel", _make_style(Color(0.02, 0.00, 0.04, 0.18), Color(1.0, 1.0, 1.0, 0.0), 0, 8))
 	header.add_child(title_panel)
 
 	var title_box := VBoxContainer.new()
@@ -210,15 +183,13 @@ func _build_header() -> Control:
 
 	var title := Label.new()
 	title.text = "Dług wobec Kasyna"
-	title.add_theme_font_size_override("font_size", 26)
-	title.add_theme_color_override("font_color", ThemeFactory.TEXT_CREAM)
-	title.add_theme_color_override("font_outline_color", INK)
+	title.add_theme_font_size_override("font_size", 24)
+	title.add_theme_color_override("font_outline_color", Color(0.02, 0.00, 0.03, 0.95))
 	title.add_theme_constant_override("outline_size", 6)
 	title_box.add_child(title)
 
 	stage_label = Label.new()
-	stage_label.add_theme_font_size_override("font_size", 13)
-	stage_label.add_theme_color_override("font_color", ThemeFactory.GOLD_SOFT)
+	stage_label.add_theme_font_size_override("font_size", 12)
 	title_box.add_child(stage_label)
 
 	var money_card := _create_stat_card("KASA", GOLD, -1.0)
@@ -242,9 +213,9 @@ func _build_header() -> Control:
 
 func _create_stat_card(caption: String, accent_color: Color, tilt: float) -> PanelContainer:
 	var panel := PanelContainer.new()
-	panel.custom_minimum_size = Vector2(112, 58)
+	panel.custom_minimum_size = Vector2(104, 52)
 	panel.rotation_degrees = tilt
-	panel.add_theme_stylebox_override("panel", ThemeFactory.stat_card_style(accent_color))
+	panel.add_theme_stylebox_override("panel", _make_style(Color(0.02, 0.01, 0.04, 0.50), accent_color, 1, 8))
 
 	var box := VBoxContainer.new()
 	box.name = "Box"
@@ -260,64 +231,25 @@ func _create_stat_card(caption: String, accent_color: Color, tilt: float) -> Pan
 	caption_label.text = caption
 	caption_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	caption_label.add_theme_font_size_override("font_size", 11)
-	caption_label.add_theme_color_override("font_color", ThemeFactory.TEXT_MUTED)
+	caption_label.add_theme_color_override("font_color", Color(0.88, 0.94, 1.0, 0.90))
 	box.add_child(caption_label)
 
 	var value_label := Label.new()
 	value_label.name = "Value"
 	value_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	value_label.add_theme_font_size_override("font_size", 24)
+	value_label.add_theme_font_size_override("font_size", 22)
 	value_label.add_theme_color_override("font_color", accent_color)
-	value_label.add_theme_color_override("font_outline_color", INK)
+	value_label.add_theme_color_override("font_outline_color", Color(0.02, 0.00, 0.03, 0.95))
 	value_label.add_theme_constant_override("outline_size", 5)
 	box.add_child(value_label)
 
 	return panel
 
 
-func _add_table_ornaments(parent: Control) -> void:
-	var top_line := ColorRect.new()
-	top_line.color = Color(ThemeFactory.GOLD.r, ThemeFactory.GOLD.g, ThemeFactory.GOLD.b, 0.30)
-	top_line.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	top_line.anchor_left = 0.08
-	top_line.anchor_right = 0.92
-	top_line.anchor_top = 0.04
-	top_line.anchor_bottom = 0.04
-	top_line.offset_top = 0.0
-	top_line.offset_bottom = 2.0
-	parent.add_child(top_line)
-
-	var bottom_line := ColorRect.new()
-	bottom_line.color = Color(ThemeFactory.GOLD.r, ThemeFactory.GOLD.g, ThemeFactory.GOLD.b, 0.22)
-	bottom_line.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	bottom_line.anchor_left = 0.10
-	bottom_line.anchor_right = 0.90
-	bottom_line.anchor_top = 0.96
-	bottom_line.anchor_bottom = 0.96
-	bottom_line.offset_top = -2.0
-	bottom_line.offset_bottom = 0.0
-	parent.add_child(bottom_line)
-
-	for index: int in range(2):
-		var corner := PanelContainer.new()
-		corner.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		corner.custom_minimum_size = Vector2(76.0, 76.0)
-		corner.anchor_left = 0.0 if index == 0 else 1.0
-		corner.anchor_right = 0.0 if index == 0 else 1.0
-		corner.anchor_top = 0.0
-		corner.anchor_bottom = 0.0
-		corner.offset_left = 14.0 if index == 0 else -90.0
-		corner.offset_right = 90.0 if index == 0 else -14.0
-		corner.offset_top = 14.0
-		corner.offset_bottom = 90.0
-		corner.add_theme_stylebox_override("panel", _make_style(Color.TRANSPARENT, Color(ThemeFactory.GOLD.r, ThemeFactory.GOLD.g, ThemeFactory.GOLD.b, 0.18), 1, 38))
-		parent.add_child(corner)
-
-
 func _build_hand_panel(title: String, is_dealer: bool) -> Control:
 	var panel := PanelContainer.new()
 	panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	panel.add_theme_stylebox_override("panel", ThemeFactory.hand_zone_style(is_dealer))
+	panel.add_theme_stylebox_override("panel", _make_style(Color(0.0, 0.0, 0.0, 0.0), Color(1.0, 1.0, 1.0, 0.0), 0, 8))
 
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 6)
@@ -330,16 +262,16 @@ func _build_hand_panel(title: String, is_dealer: bool) -> Control:
 	var name_label := Label.new()
 	name_label.text = title.to_upper()
 	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	name_label.add_theme_font_size_override("font_size", 18)
-	name_label.add_theme_color_override("font_color", ThemeFactory.TEXT_CREAM)
-	name_label.add_theme_color_override("font_outline_color", INK)
+	name_label.add_theme_font_size_override("font_size", 17)
+	name_label.add_theme_color_override("font_color", Color(0.93, 1.0, 0.97))
+	name_label.add_theme_color_override("font_outline_color", Color(0.02, 0.00, 0.03, 0.95))
 	name_label.add_theme_constant_override("outline_size", 5)
 	top_row.add_child(name_label)
 
 	var score_badge := PanelContainer.new()
 	score_badge.custom_minimum_size = Vector2(128, 58)
 	score_badge.rotation_degrees = -1.2 if is_dealer else 1.2
-	score_badge.add_theme_stylebox_override("panel", ThemeFactory.stat_card_style(CYAN if is_dealer else GOLD))
+	score_badge.add_theme_stylebox_override("panel", _make_style(Color(0.03, 0.00, 0.05, 0.58), GOLD if not is_dealer else CYAN, 1, 8))
 	top_row.add_child(score_badge)
 
 	var score_box := VBoxContainer.new()
@@ -357,8 +289,8 @@ func _build_hand_panel(title: String, is_dealer: bool) -> Control:
 	var score_label := Label.new()
 	score_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	score_label.add_theme_font_size_override("font_size", 38)
-	score_label.add_theme_color_override("font_color", ThemeFactory.TEXT_CREAM)
-	score_label.add_theme_color_override("font_outline_color", INK)
+	score_label.add_theme_color_override("font_color", Color(1.0, 0.97, 0.84))
+	score_label.add_theme_color_override("font_outline_color", Color(0.03, 0.00, 0.05, 0.95))
 	score_label.add_theme_constant_override("outline_size", 7)
 	score_box.add_child(score_label)
 
@@ -414,7 +346,7 @@ func _build_reward_overlay() -> Control:
 	reward_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
 
 	var dim := ColorRect.new()
-	dim.color = ThemeFactory.reward_overlay_color()
+	dim.color = Color(0.02, 0.00, 0.04, 0.72)
 	dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
 	reward_overlay.add_child(dim)
@@ -435,10 +367,10 @@ func _build_reward_overlay() -> Control:
 	var title := Label.new()
 	title.text = "WYBIERZ RELIKT"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 46)
-	title.add_theme_color_override("font_color", ThemeFactory.GOLD_SOFT)
+	title.add_theme_font_size_override("font_size", 42)
+	title.add_theme_color_override("font_color", GOLD)
 	title.add_theme_color_override("font_outline_color", INK)
-	title.add_theme_constant_override("outline_size", 12)
+	title.add_theme_constant_override("outline_size", 10)
 	box.add_child(title)
 
 	reward_cards_row = HBoxContainer.new()
@@ -467,10 +399,10 @@ func _create_reward_card(relic: RelicData, index: int) -> Button:
 	card.text = ""
 	card.set_meta("relic", relic)
 	card.set_meta("index", index)
-	card.add_theme_stylebox_override("normal", ThemeFactory.relic_card_style(relic.rarity, 0.92))
-	card.add_theme_stylebox_override("hover", ThemeFactory.relic_card_style(relic.rarity, 1.0))
-	card.add_theme_stylebox_override("pressed", ThemeFactory.relic_card_style(relic.rarity, 0.78))
-	card.add_theme_stylebox_override("disabled", ThemeFactory.relic_card_style(relic.rarity, 0.62))
+	card.add_theme_stylebox_override("normal", _make_relic_card_style(relic.rarity, 0.92))
+	card.add_theme_stylebox_override("hover", _make_relic_card_style(relic.rarity, 1.0))
+	card.add_theme_stylebox_override("pressed", _make_relic_card_style(relic.rarity, 0.78))
+	card.add_theme_stylebox_override("disabled", _make_relic_card_style(relic.rarity, 0.62))
 	card.pressed.connect(_on_reward_card_pressed.bind(card))
 	JuiceManager.wire_button(card)
 
@@ -495,14 +427,14 @@ func _create_reward_card(relic: RelicData, index: int) -> Button:
 func _create_relic_card_back(relic: RelicData) -> Control:
 	var back := PanelContainer.new()
 	back.set_anchors_preset(Control.PRESET_FULL_RECT)
-	back.add_theme_stylebox_override("panel", ThemeFactory.relic_card_style(relic.rarity, 0.94))
+	back.add_theme_stylebox_override("panel", _make_style(Color(0.05, 0.01, 0.08, 0.96), JuiceManager.get_rarity_color(relic.rarity), 2, 8))
 
 	var label := Label.new()
 	label.text = "?"
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	label.add_theme_font_size_override("font_size", 96)
-	label.add_theme_color_override("font_color", ThemeFactory.rarity_color(relic.rarity))
+	label.add_theme_color_override("font_color", JuiceManager.get_rarity_color(relic.rarity))
 	label.add_theme_color_override("font_outline_color", INK)
 	label.add_theme_constant_override("outline_size", 12)
 	back.add_child(label)
@@ -527,7 +459,7 @@ func _create_relic_card_front(relic: RelicData) -> Control:
 	rarity.text = relic.get_rarity_label()
 	rarity.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	rarity.add_theme_font_size_override("font_size", 14)
-	rarity.add_theme_color_override("font_color", ThemeFactory.rarity_color(relic.rarity))
+	rarity.add_theme_color_override("font_color", JuiceManager.get_rarity_color(relic.rarity))
 	rarity.add_theme_color_override("font_outline_color", INK)
 	rarity.add_theme_constant_override("outline_size", 4)
 	box.add_child(rarity)
@@ -537,13 +469,13 @@ func _create_relic_card_front(relic: RelicData) -> Control:
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	name_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	name_label.add_theme_font_size_override("font_size", 25)
-	name_label.add_theme_color_override("font_color", ThemeFactory.TEXT_CREAM)
+	name_label.add_theme_color_override("font_color", Color(1.0, 0.94, 0.76))
 	name_label.add_theme_color_override("font_outline_color", INK)
 	name_label.add_theme_constant_override("outline_size", 6)
 	box.add_child(name_label)
 
 	var divider := ColorRect.new()
-	divider.color = ThemeFactory.rarity_color(relic.rarity)
+	divider.color = JuiceManager.get_rarity_color(relic.rarity)
 	divider.custom_minimum_size = Vector2(0, 3)
 	box.add_child(divider)
 
@@ -552,7 +484,7 @@ func _create_relic_card_front(relic: RelicData) -> Control:
 	description_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	description_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	description_label.add_theme_font_size_override("font_size", 17)
-	description_label.add_theme_color_override("font_color", ThemeFactory.TEXT_MUTED.lightened(0.12))
+	description_label.add_theme_color_override("font_color", Color(0.92, 0.88, 0.78))
 	box.add_child(description_label)
 
 	var tags_label := Label.new()
@@ -560,7 +492,7 @@ func _create_relic_card_front(relic: RelicData) -> Control:
 	tags_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	tags_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	tags_label.add_theme_font_size_override("font_size", 12)
-	tags_label.add_theme_color_override("font_color", Color(ThemeFactory.NEON_CYAN.r, ThemeFactory.NEON_CYAN.g, ThemeFactory.NEON_CYAN.b, 0.74))
+	tags_label.add_theme_color_override("font_color", Color(0.70, 0.90, 1.0, 0.74))
 	box.add_child(tags_label)
 
 	return front
@@ -604,6 +536,25 @@ func _get_tag_label(tag: String) -> String:
 	return tag
 
 
+func _make_relic_card_style(rarity: String, alpha: float) -> StyleBoxFlat:
+	var color := JuiceManager.get_rarity_color(rarity)
+	var style := _make_style(Color(0.05, 0.015, 0.08, alpha), color, _get_rarity_border_width(rarity), 8)
+	style.shadow_color = Color(color.r, color.g, color.b, 0.34 * alpha)
+	style.shadow_size = int(4 + JuiceManager.get_rarity_intensity(rarity) * 10.0)
+	style.shadow_offset = Vector2(0, 0)
+	return style
+
+
+func _get_rarity_border_width(rarity: String) -> int:
+	match rarity:
+		RelicData.RARITY_RARE:
+			return 2
+		RelicData.RARITY_EPIC, RelicData.RARITY_LEGENDARY:
+			return 3
+
+	return 1
+
+
 func _build_relic_drawer() -> Control:
 	var shell := Control.new()
 	shell.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -636,7 +587,7 @@ func _build_relic_drawer() -> Control:
 	relic_drawer_panel.offset_right = -46.0
 	relic_drawer_panel.offset_top = 0.0
 	relic_drawer_panel.offset_bottom = 0.0
-	relic_drawer_panel.add_theme_stylebox_override("panel", ThemeFactory.hud_panel_style())
+	relic_drawer_panel.add_theme_stylebox_override("panel", _make_style(Color(0.03, 0.01, 0.05, 0.78), Color(1.0, 1.0, 1.0, 0.0), 0, 8))
 	relic_drawer_panel.mouse_entered.connect(_show_relic_drawer)
 	relic_drawer_panel.mouse_exited.connect(_on_relic_drawer_mouse_exited)
 	shell.add_child(relic_drawer_panel)
@@ -649,7 +600,6 @@ func _build_relic_drawer() -> Control:
 	title.text = "Relikty"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 16)
-	title.add_theme_color_override("font_color", ThemeFactory.GOLD_SOFT)
 	box.add_child(title)
 
 	relic_drawer_list = VBoxContainer.new()
@@ -664,7 +614,7 @@ func _build_synergy_panel() -> Control:
 	synergy_panel.visible = false
 	synergy_panel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	synergy_panel.rotation_degrees = -0.25
-	synergy_panel.add_theme_stylebox_override("panel", ThemeFactory.stat_card_style(Color(1.0, 0.43, 0.95)))
+	synergy_panel.add_theme_stylebox_override("panel", _make_style(Color(0.03, 0.01, 0.05, 0.50), Color(1.0, 0.43, 0.95, 0.55), 1, 8))
 
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 3)
@@ -690,7 +640,7 @@ func _build_controls() -> Control:
 	var panel := PanelContainer.new()
 	panel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	panel.rotation_degrees = 0.25
-	panel.add_theme_stylebox_override("panel", ThemeFactory.controls_style())
+	panel.add_theme_stylebox_override("panel", _make_style(Color(0.03, 0.01, 0.05, 0.60), CYAN, 1, 8))
 
 	var controls := HBoxContainer.new()
 	controls.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -722,7 +672,7 @@ func _build_controls() -> Control:
 	bet_input.value = DEFAULT_BET
 	bet_input.custom_minimum_size = Vector2(96, 34)
 	bet_input.add_theme_font_size_override("font_size", 16)
-	bet_input.add_theme_color_override("font_color", ThemeFactory.TEXT_CREAM)
+	bet_input.add_theme_color_override("font_color", Color(1.0, 0.94, 0.74))
 	bet_controls.add_child(bet_input)
 
 	increase_bet_button = _create_small_button("+5")
@@ -766,8 +716,8 @@ func _build_controls() -> Control:
 func _create_action_button(text: String, accent_color: Color = GOLD, bg_color: Color = Color(0.19, 0.05, 0.18)) -> Button:
 	var button := Button.new()
 	button.text = text
-	button.custom_minimum_size = Vector2(128, 48)
-	button.add_theme_font_size_override("font_size", 17)
+	button.custom_minimum_size = Vector2(118, 44)
+	button.add_theme_font_size_override("font_size", 16)
 	button.add_theme_color_override("font_color", accent_color)
 	button.add_theme_color_override("font_outline_color", INK)
 	button.add_theme_constant_override("outline_size", 3)
@@ -790,10 +740,10 @@ func _create_small_button(text: String) -> Button:
 
 
 func _apply_button_style(button: Button, border_color: Color, bg_color: Color) -> void:
-	button.add_theme_stylebox_override("normal", ThemeFactory.button_style(bg_color, border_color))
-	button.add_theme_stylebox_override("hover", ThemeFactory.button_style(bg_color, border_color, "hover"))
-	button.add_theme_stylebox_override("pressed", ThemeFactory.button_style(bg_color, border_color, "pressed"))
-	button.add_theme_stylebox_override("disabled", ThemeFactory.button_style(bg_color, border_color, "disabled"))
+	button.add_theme_stylebox_override("normal", _make_style(bg_color, Color(1.0, 1.0, 1.0, 0.0), 0, 8))
+	button.add_theme_stylebox_override("hover", _make_style(bg_color.lightened(0.10), border_color.lightened(0.12), 1, 8))
+	button.add_theme_stylebox_override("pressed", _make_style(bg_color.darkened(0.08), Color(1.0, 1.0, 1.0, 0.0), 0, 8))
+	button.add_theme_stylebox_override("disabled", _make_style(Color(0.08, 0.07, 0.08, 0.34), Color(1.0, 1.0, 1.0, 0.0), 0, 8))
 
 
 func _create_relic_button() -> Button:
@@ -1581,43 +1531,41 @@ func _create_card_view(card: CardData, hidden: bool, animate_enter: bool = true,
 	card_slot.mouse_exited.connect(_on_card_mouse_exited.bind(visual_layer))
 
 	var shadow := ColorRect.new()
-	shadow.color = ThemeFactory.CARD_SHADOW
-	shadow.position = Vector2(6, 8)
-	shadow.size = CARD_SIZE - Vector2(4, 5)
+	shadow.color = Color(0.0, 0.0, 0.0, 0.32)
+	shadow.position = Vector2(4, 5)
+	shadow.size = CARD_SIZE - Vector2(5, 6)
 	visual_layer.add_child(shadow)
 
 	if hidden:
-		visual_layer.add_child(_create_card_back_view())
+		var back_texture := TextureRect.new()
+		back_texture.texture = CARD_BACK_TEXTURE
+		back_texture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		back_texture.stretch_mode = TextureRect.STRETCH_SCALE
+		back_texture.set_anchors_preset(Control.PRESET_FULL_RECT)
+		back_texture.custom_minimum_size = Vector2.ZERO
+		visual_layer.add_child(back_texture)
 		if animate_enter:
 			call_deferred("_animate_card_enter", visual_layer, animate_delay)
 		return card_slot
 
-	var card_root := PanelContainer.new()
+	var card_root := Control.new()
 	card_root.set_anchors_preset(Control.PRESET_FULL_RECT)
-	card_root.add_theme_stylebox_override("panel", ThemeFactory.card_face_style())
 	visual_layer.add_child(card_root)
 
-	var inner := PanelContainer.new()
-	inner.anchor_left = 0.08
-	inner.anchor_right = 0.92
-	inner.anchor_top = 0.07
-	inner.anchor_bottom = 0.93
-	inner.add_theme_stylebox_override("panel", ThemeFactory.card_inner_style())
-	card_root.add_child(inner)
-
-	var shine := ColorRect.new()
-	shine.color = Color(1.0, 1.0, 1.0, 0.14)
-	shine.position = Vector2(14, 10)
-	shine.size = Vector2(44, 5)
-	shine.rotation_degrees = -12.0
-	card_root.add_child(shine)
+	var front_texture := TextureRect.new()
+	front_texture.texture = CARD_FRONT_TEXTURE
+	front_texture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	front_texture.stretch_mode = TextureRect.STRETCH_SCALE
+	front_texture.set_anchors_preset(Control.PRESET_FULL_RECT)
+	front_texture.custom_minimum_size = Vector2.ZERO
+	card_root.add_child(front_texture)
 
 	var top_corner := _create_corner_label(card, false)
-	top_corner.position = Vector2(12, 11)
+	top_corner.position = Vector2(14, 13)
 	card_root.add_child(top_corner)
 
 	var bottom_corner := _create_corner_label(card, false)
-	bottom_corner.position = Vector2(CARD_SIZE.x - 35, CARD_SIZE.y - 45)
+	bottom_corner.position = Vector2(CARD_SIZE.x - 34, CARD_SIZE.y - 43)
 	card_root.add_child(bottom_corner)
 
 	var center_symbol := Label.new()
@@ -1625,42 +1573,13 @@ func _create_card_view(card: CardData, hidden: bool, animate_enter: bool = true,
 	center_symbol.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	center_symbol.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	center_symbol.add_theme_color_override("font_color", _get_suit_color(card.suit))
-	center_symbol.add_theme_font_size_override("font_size", 42)
-	center_symbol.add_theme_color_override("font_outline_color", Color(1.0, 0.94, 0.78, 0.24))
-	center_symbol.add_theme_constant_override("outline_size", 2)
+	center_symbol.add_theme_font_size_override("font_size", 36)
 	center_symbol.set_anchors_preset(Control.PRESET_FULL_RECT)
 	card_root.add_child(center_symbol)
 
 	if animate_enter:
 		call_deferred("_animate_card_enter", visual_layer, animate_delay)
 	return card_slot
-
-
-func _create_card_back_view() -> Control:
-	var back := PanelContainer.new()
-	back.set_anchors_preset(Control.PRESET_FULL_RECT)
-	back.add_theme_stylebox_override("panel", ThemeFactory.card_back_style())
-
-	var inset := PanelContainer.new()
-	inset.anchor_left = 0.10
-	inset.anchor_right = 0.90
-	inset.anchor_top = 0.08
-	inset.anchor_bottom = 0.92
-	inset.add_theme_stylebox_override("panel", _make_style(Color(0.070, 0.010, 0.024, 0.92), Color(ThemeFactory.GOLD.r, ThemeFactory.GOLD.g, ThemeFactory.GOLD.b, 0.58), 1, 5))
-	back.add_child(inset)
-
-	var center := Label.new()
-	center.text = "◆\n♠\n◆"
-	center.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	center.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	center.add_theme_font_size_override("font_size", 24)
-	center.add_theme_color_override("font_color", ThemeFactory.GOLD_SOFT)
-	center.add_theme_color_override("font_outline_color", INK)
-	center.add_theme_constant_override("outline_size", 3)
-	center.set_anchors_preset(Control.PRESET_FULL_RECT)
-	back.add_child(center)
-
-	return back
 
 
 func _animate_card_enter(visual_layer: Control, delay: float = 0.0) -> void:
@@ -1696,7 +1615,6 @@ func _play_result_feedback(result: String, payout: int) -> void:
 	match result:
 		BlackjackResult.PLAYER_BLACKJACK:
 			JuiceManager.play_blackjack(self, result_burst_label, money_label, debt_label, flash_overlay, payout)
-			JuiceManager.pulse_label(table_shell, 1.012, 0.24)
 		BlackjackResult.PLAYER_WIN, BlackjackResult.DEALER_BUST:
 			JuiceManager.play_round_win(self, result_burst_label, money_label, flash_overlay, payout)
 		BlackjackResult.PUSH:
@@ -1707,23 +1625,21 @@ func _play_result_feedback(result: String, payout: int) -> void:
 
 func _create_corner_label(card: CardData, flipped: bool) -> Control:
 	var box := VBoxContainer.new()
-	box.custom_minimum_size = Vector2(25, 36)
-	box.add_theme_constant_override("separation", -4)
+	box.custom_minimum_size = Vector2(23, 34)
+	box.add_theme_constant_override("separation", -3)
 
 	var rank_label := Label.new()
 	rank_label.text = card.rank
 	rank_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	rank_label.add_theme_color_override("font_color", _get_suit_color(card.suit))
-	rank_label.add_theme_font_size_override("font_size", 16)
-	rank_label.add_theme_color_override("font_outline_color", Color(1.0, 0.94, 0.78, 0.22))
-	rank_label.add_theme_constant_override("outline_size", 1)
+	rank_label.add_theme_font_size_override("font_size", 13)
 	box.add_child(rank_label)
 
 	var suit_label := Label.new()
 	suit_label.text = _get_suit_symbol(card.suit)
 	suit_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	suit_label.add_theme_color_override("font_color", _get_suit_color(card.suit))
-	suit_label.add_theme_font_size_override("font_size", 14)
+	suit_label.add_theme_font_size_override("font_size", 13)
 	box.add_child(suit_label)
 
 	return box
