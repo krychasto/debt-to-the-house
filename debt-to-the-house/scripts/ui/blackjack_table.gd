@@ -45,6 +45,9 @@ var relics_button: Button
 var relic_drawer_panel: PanelContainer
 var relic_drawer_list: VBoxContainer
 var reward_panel: PanelContainer
+var reward_overlay: Control
+var reward_cards_row: HBoxContainer
+var reward_message_label: Label
 var table_area_root: VBoxContainer
 var background_shade: ColorRect
 var chip_layer: Control
@@ -52,12 +55,14 @@ var flash_overlay: ColorRect
 var result_burst_label: Label
 var active_chips: Array[Control] = []
 var reward_buttons: Array[Button] = []
+var reward_card_views: Array[Control] = []
 var current_reward_choices: Array[RelicData] = []
 var last_player_card_count: int = 0
 var last_dealer_card_count: int = 0
 var is_relic_drawer_pinned: bool = false
 var is_dealer_sequence_playing: bool = false
 var is_stage_clear_sequence_playing: bool = false
+var is_reward_screen_open: bool = false
 var should_hide_dealer_hole: bool = true
 var should_animate_dealer_reveal: bool = false
 
@@ -154,9 +159,9 @@ func _build_ui() -> void:
 	var player_panel := _build_hand_panel("Player", false)
 	table_area_root.add_child(player_panel)
 
-	root.add_child(_build_reward_panel())
 	root.add_child(_build_controls())
 	add_child(_build_relic_drawer())
+	add_child(_build_reward_overlay())
 
 
 func _build_header() -> Control:
@@ -324,6 +329,192 @@ func _build_reward_panel() -> Control:
 		choices_row.add_child(button)
 
 	return reward_panel
+
+
+func _build_reward_overlay() -> Control:
+	reward_overlay = Control.new()
+	reward_overlay.visible = false
+	reward_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	reward_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+
+	var dim := ColorRect.new()
+	dim.color = Color(0.02, 0.00, 0.04, 0.72)
+	dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	reward_overlay.add_child(dim)
+
+	var margin := MarginContainer.new()
+	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
+	margin.add_theme_constant_override("margin_left", 80)
+	margin.add_theme_constant_override("margin_top", 72)
+	margin.add_theme_constant_override("margin_right", 80)
+	margin.add_theme_constant_override("margin_bottom", 72)
+	reward_overlay.add_child(margin)
+
+	var box := VBoxContainer.new()
+	box.alignment = BoxContainer.ALIGNMENT_CENTER
+	box.add_theme_constant_override("separation", 22)
+	margin.add_child(box)
+
+	var title := Label.new()
+	title.text = "WYBIERZ RELIKT"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 42)
+	title.add_theme_color_override("font_color", GOLD)
+	title.add_theme_color_override("font_outline_color", INK)
+	title.add_theme_constant_override("outline_size", 10)
+	box.add_child(title)
+
+	reward_cards_row = HBoxContainer.new()
+	reward_cards_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	reward_cards_row.add_theme_constant_override("separation", 22)
+	box.add_child(reward_cards_row)
+
+	reward_message_label = Label.new()
+	reward_message_label.visible = false
+	reward_message_label.text = "RELIKT ZDOBYTY"
+	reward_message_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	reward_message_label.add_theme_font_size_override("font_size", 30)
+	reward_message_label.add_theme_color_override("font_color", CYAN)
+	reward_message_label.add_theme_color_override("font_outline_color", INK)
+	reward_message_label.add_theme_constant_override("outline_size", 8)
+	box.add_child(reward_message_label)
+
+	return reward_overlay
+
+
+func _create_reward_card(relic: RelicData, index: int) -> Button:
+	var card := Button.new()
+	card.custom_minimum_size = Vector2(250, 340)
+	card.disabled = true
+	card.focus_mode = Control.FOCUS_NONE
+	card.text = ""
+	card.set_meta("relic", relic)
+	card.set_meta("index", index)
+	card.add_theme_stylebox_override("normal", _make_relic_card_style(relic.rarity, 0.92))
+	card.add_theme_stylebox_override("hover", _make_relic_card_style(relic.rarity, 1.0))
+	card.add_theme_stylebox_override("pressed", _make_relic_card_style(relic.rarity, 0.78))
+	card.add_theme_stylebox_override("disabled", _make_relic_card_style(relic.rarity, 0.62))
+	card.pressed.connect(_on_reward_card_pressed.bind(card))
+	JuiceManager.wire_button(card)
+
+	var content := Control.new()
+	content.name = "Content"
+	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	content.set_anchors_preset(Control.PRESET_FULL_RECT)
+	card.add_child(content)
+
+	var back := _create_relic_card_back(relic)
+	back.name = "Back"
+	content.add_child(back)
+
+	var front := _create_relic_card_front(relic)
+	front.name = "Front"
+	front.visible = false
+	content.add_child(front)
+
+	return card
+
+
+func _create_relic_card_back(relic: RelicData) -> Control:
+	var back := PanelContainer.new()
+	back.set_anchors_preset(Control.PRESET_FULL_RECT)
+	back.add_theme_stylebox_override("panel", _make_style(Color(0.05, 0.01, 0.08, 0.96), JuiceManager.get_rarity_color(relic.rarity), 2, 8))
+
+	var label := Label.new()
+	label.text = "?"
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.add_theme_font_size_override("font_size", 96)
+	label.add_theme_color_override("font_color", JuiceManager.get_rarity_color(relic.rarity))
+	label.add_theme_color_override("font_outline_color", INK)
+	label.add_theme_constant_override("outline_size", 12)
+	back.add_child(label)
+
+	return back
+
+
+func _create_relic_card_front(relic: RelicData) -> Control:
+	var front := MarginContainer.new()
+	front.set_anchors_preset(Control.PRESET_FULL_RECT)
+	front.add_theme_constant_override("margin_left", 16)
+	front.add_theme_constant_override("margin_top", 16)
+	front.add_theme_constant_override("margin_right", 16)
+	front.add_theme_constant_override("margin_bottom", 16)
+
+	var box := VBoxContainer.new()
+	box.alignment = BoxContainer.ALIGNMENT_CENTER
+	box.add_theme_constant_override("separation", 12)
+	front.add_child(box)
+
+	var rarity := Label.new()
+	rarity.text = relic.get_rarity_label()
+	rarity.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	rarity.add_theme_font_size_override("font_size", 14)
+	rarity.add_theme_color_override("font_color", JuiceManager.get_rarity_color(relic.rarity))
+	rarity.add_theme_color_override("font_outline_color", INK)
+	rarity.add_theme_constant_override("outline_size", 4)
+	box.add_child(rarity)
+
+	var name_label := Label.new()
+	name_label.text = relic.display_name
+	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	name_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	name_label.add_theme_font_size_override("font_size", 25)
+	name_label.add_theme_color_override("font_color", Color(1.0, 0.94, 0.76))
+	name_label.add_theme_color_override("font_outline_color", INK)
+	name_label.add_theme_constant_override("outline_size", 6)
+	box.add_child(name_label)
+
+	var divider := ColorRect.new()
+	divider.color = JuiceManager.get_rarity_color(relic.rarity)
+	divider.custom_minimum_size = Vector2(0, 3)
+	box.add_child(divider)
+
+	var description_label := Label.new()
+	description_label.text = relic.description
+	description_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	description_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	description_label.add_theme_font_size_override("font_size", 17)
+	description_label.add_theme_color_override("font_color", Color(0.92, 0.88, 0.78))
+	box.add_child(description_label)
+
+	var tags_label := Label.new()
+	tags_label.text = _format_relic_tags(relic.tags)
+	tags_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	tags_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	tags_label.add_theme_font_size_override("font_size", 12)
+	tags_label.add_theme_color_override("font_color", Color(0.70, 0.90, 1.0, 0.74))
+	box.add_child(tags_label)
+
+	return front
+
+
+func _format_relic_tags(tags: Array[String]) -> String:
+	var formatted := PackedStringArray()
+	for tag: String in tags:
+		formatted.append("#%s" % tag)
+
+	return " ".join(formatted)
+
+
+func _make_relic_card_style(rarity: String, alpha: float) -> StyleBoxFlat:
+	var color := JuiceManager.get_rarity_color(rarity)
+	var style := _make_style(Color(0.05, 0.015, 0.08, alpha), color, _get_rarity_border_width(rarity), 8)
+	style.shadow_color = Color(color.r, color.g, color.b, 0.34 * alpha)
+	style.shadow_size = int(4 + JuiceManager.get_rarity_intensity(rarity) * 10.0)
+	style.shadow_offset = Vector2(0, 0)
+	return style
+
+
+func _get_rarity_border_width(rarity: String) -> int:
+	match rarity:
+		RelicData.RARITY_RARE:
+			return 2
+		RelicData.RARITY_EPIC, RelicData.RARITY_LEGENDARY:
+			return 3
+
+	return 1
 
 
 func _build_relic_drawer() -> Control:
@@ -863,16 +1054,57 @@ func _on_reward_pressed(index: int) -> void:
 	_update_ui()
 
 
+func _on_reward_card_pressed(card: Button) -> void:
+	if not is_reward_screen_open or not is_instance_valid(card):
+		return
+	if card.disabled:
+		return
+
+	var relic := card.get_meta("relic") as RelicData
+	if relic == null:
+		return
+
+	is_reward_screen_open = false
+	for view: Control in reward_card_views:
+		if view is Button:
+			(view as Button).disabled = true
+
+	var dismissed: Array[Control] = []
+	for view: Control in reward_card_views:
+		if view != card:
+			dismissed.append(view)
+
+	JuiceManager.play_relic_selected(self, card, dismissed, reward_message_label)
+	await get_tree().create_timer(0.52).timeout
+
+	run_manager.add_relic(relic, engine.rules)
+	run_manager.advance_stage()
+	engine.reset_round()
+	_clear_bet_chips()
+	should_hide_dealer_hole = true
+	should_animate_dealer_reveal = false
+	current_reward_choices.clear()
+	reward_card_views.clear()
+	reward_overlay.visible = false
+	reward_message_label.visible = false
+	message_label.text = "%s zdobyty. Stage %d." % [relic.display_name, run_manager.stage]
+	_update_ui()
+
+
 func _on_retry_pressed() -> void:
 	run_manager.reset_run()
 	engine = BlackjackEngine.new()
 	_clear_bet_chips()
 	current_reward_choices.clear()
+	reward_card_views.clear()
 	is_relic_drawer_pinned = false
 	is_dealer_sequence_playing = false
 	is_stage_clear_sequence_playing = false
+	is_reward_screen_open = false
 	should_hide_dealer_hole = true
 	should_animate_dealer_reveal = false
+	if is_instance_valid(reward_overlay):
+		reward_overlay.visible = false
 	if is_instance_valid(background_shade):
 		background_shade.color = Color(0.04, 0.00, 0.07, 0.08)
 	message_label.text = "New run. Set a bet and deal."
@@ -926,8 +1158,60 @@ func _start_stage_clear_feedback() -> void:
 
 func _finish_stage_clear_feedback() -> void:
 	is_stage_clear_sequence_playing = false
+	current_reward_choices = RelicLibrary.get_reward_choices(3, run_manager.get_owned_relic_ids())
+	_show_reward_screen()
 	_update_ui()
-	JuiceManager.play_reward_anticipation(reward_panel)
+
+
+func _show_reward_screen() -> void:
+	_clear_children(reward_cards_row)
+	reward_card_views.clear()
+	reward_message_label.visible = false
+	reward_overlay.visible = true
+	is_reward_screen_open = true
+
+	for index: int in range(current_reward_choices.size()):
+		var card := _create_reward_card(current_reward_choices[index], index)
+		card.modulate.a = 0.0
+		card.scale = Vector2(0.88, 0.88)
+		card.rotation_degrees = randf_range(-2.0, 2.0)
+		reward_cards_row.add_child(card)
+		reward_card_views.append(card)
+
+	JuiceManager.play_reward_anticipation(reward_overlay)
+	_reveal_reward_cards()
+
+
+func _reveal_reward_cards() -> void:
+	for index: int in range(reward_card_views.size()):
+		if not is_reward_screen_open:
+			return
+
+		var card := reward_card_views[index] as Button
+		if not is_instance_valid(card):
+			continue
+
+		await get_tree().create_timer(0.22 + index * 0.16).timeout
+		if not is_reward_screen_open:
+			return
+
+		var relic := card.get_meta("relic") as RelicData
+		_reveal_reward_card(card, relic)
+
+
+func _reveal_reward_card(card: Button, relic: RelicData) -> void:
+	if relic == null:
+		return
+
+	var back := card.get_node_or_null("Content/Back") as Control
+	var front := card.get_node_or_null("Content/Front") as Control
+	if is_instance_valid(back):
+		back.visible = false
+	if is_instance_valid(front):
+		front.visible = true
+
+	card.disabled = false
+	JuiceManager.play_relic_rarity_reveal(self, card, relic.rarity, flash_overlay)
 
 
 func _start_game_over_feedback() -> void:
@@ -958,8 +1242,6 @@ func _update_ui() -> void:
 
 	var stage_ready_to_advance := run_manager.is_stage_success() and not engine.is_round_active
 	var game_over := run_manager.is_game_over() and not engine.is_round_active
-	if stage_ready_to_advance and not is_stage_clear_sequence_playing and current_reward_choices.is_empty():
-		current_reward_choices = RelicLibrary.get_reward_choices(3, run_manager.get_owned_relic_ids())
 
 	deal_button.disabled = engine.is_round_active or is_dealer_sequence_playing or stage_ready_to_advance or game_over or not run_manager.can_play_hand()
 	hit_button.disabled = not engine.is_round_active or is_dealer_sequence_playing
@@ -969,7 +1251,8 @@ func _update_ui() -> void:
 	decrease_bet_button.disabled = engine.is_round_active or is_dealer_sequence_playing or game_over or stage_ready_to_advance
 	increase_bet_button.disabled = engine.is_round_active or is_dealer_sequence_playing or game_over or stage_ready_to_advance
 	max_bet_button.disabled = engine.is_round_active or is_dealer_sequence_playing or game_over or stage_ready_to_advance
-	reward_panel.visible = stage_ready_to_advance and not game_over and not is_stage_clear_sequence_playing
+	if is_instance_valid(reward_panel):
+		reward_panel.visible = false
 	relics_button.text = _get_relics_text()
 	_update_reward_buttons()
 	_update_relic_drawer()

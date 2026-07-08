@@ -62,6 +62,50 @@ static func play_relic_reveal(relic_node: Control) -> void:
 	JuiceTweenFactory.pop_in(relic_node, 0.22)
 
 
+static func play_relic_rarity_reveal(root: Control, relic_node: Control, rarity: String, flash_overlay: ColorRect = null) -> void:
+	if not is_instance_valid(relic_node):
+		return
+
+	var color := get_rarity_color(rarity)
+	var intensity := get_rarity_intensity(rarity)
+	JuiceGlowController.glow_card(relic_node, color, 0.28 + intensity * 0.10)
+	JuiceTweenFactory.pop_in(relic_node, 0.18 + intensity * 0.04)
+	pulse_label(relic_node, 1.04 + intensity * 0.04, 0.18 + intensity * 0.05)
+
+	if rarity == "rare" or rarity == "epic" or rarity == "legendary":
+		JuiceParticleSpawner.spawn_burst(root, relic_node.get_global_rect().get_center(), color, 8 + int(intensity * 8.0), 38.0 + intensity * 22.0)
+
+	if rarity == "epic" or rarity == "legendary":
+		JuiceShake.shake_node(relic_node, 2.5 + intensity * 2.0, 0.16)
+
+	if rarity == "legendary" and is_instance_valid(flash_overlay):
+		flash_overlay.modulate = Color(color.r, color.g, color.b, 0.30)
+		JuiceTweenFactory.fade_to(flash_overlay, 0.0, 0.34)
+		JuiceShake.screen_shake(root, 7.0, 0.22)
+
+
+static func play_relic_selected(root: Control, selected: Control, dismissed: Array[Control], message_label: Label = null) -> void:
+	if is_instance_valid(selected):
+		pulse_label(selected, 1.18, 0.24)
+		JuiceGlowController.glow_card(selected, Color(1.0, 0.82, 0.18, 0.58), 0.42)
+		JuiceParticleSpawner.spawn_burst(root, selected.get_global_rect().get_center(), Color(1.0, 0.82, 0.18, 0.80), 18, 70.0)
+
+	for node: Control in dismissed:
+		if not is_instance_valid(node):
+			continue
+		var direction := -1.0 if node.global_position.x < selected.global_position.x else 1.0
+		var tween := node.create_tween()
+		tween.set_parallel(true)
+		tween.tween_property(node, "modulate:a", 0.18, 0.20)
+		tween.tween_property(node, "position", node.position + Vector2(42.0 * direction, 18.0), 0.24).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
+		tween.tween_property(node, "scale", Vector2(0.88, 0.88), 0.20)
+
+	if is_instance_valid(message_label):
+		message_label.text = "RELIKT ZDOBYTY"
+		message_label.visible = true
+		pulse_label(message_label, 1.16, 0.22)
+
+
 static func play_reward_anticipation(panel: Control) -> void:
 	JuiceAnimationLibrary.reward_anticipation(panel)
 
@@ -165,3 +209,31 @@ static func show_result_banner(banner: Label, text: String, color: Color, intens
 			banner.visible = false
 			banner.scale = Vector2.ONE
 	)
+
+
+static func get_rarity_color(rarity: String) -> Color:
+	match rarity:
+		"uncommon":
+			return Color(0.34, 1.0, 0.60, 0.62)
+		"rare":
+			return Color(0.18, 0.64, 1.0, 0.72)
+		"epic":
+			return Color(0.78, 0.38, 1.0, 0.80)
+		"legendary":
+			return Color(1.0, 0.78, 0.16, 0.92)
+
+	return Color(0.92, 0.92, 0.86, 0.38)
+
+
+static func get_rarity_intensity(rarity: String) -> float:
+	match rarity:
+		"uncommon":
+			return 0.35
+		"rare":
+			return 0.65
+		"epic":
+			return 0.90
+		"legendary":
+			return 1.25
+
+	return 0.15
