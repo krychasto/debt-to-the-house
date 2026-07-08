@@ -5,7 +5,6 @@ const CARD_SIZE := Vector2(92, 126)
 const TABLE_TEXTURE := preload("res://assets/ui/table_felt.png")
 const CARD_BACK_TEXTURE := preload("res://assets/ui/card_back.png")
 const CARD_FRONT_TEXTURE := preload("res://assets/ui/card_front.png")
-const NUMBER_POPUP_SCENE := preload("res://scenes/ui/NumberPopup.tscn")
 const CARD_HOVER_OFFSET := Vector2(0, -8)
 const CARD_ENTER_TIME := 0.18
 const CARD_HOVER_TIME := 0.10
@@ -502,43 +501,7 @@ func _create_relic_button() -> Button:
 
 
 func _wire_button_motion(button: Button) -> void:
-	button.mouse_entered.connect(_on_button_mouse_entered.bind(button))
-	button.mouse_exited.connect(_on_button_mouse_exited.bind(button))
-	button.button_down.connect(_on_button_down.bind(button))
-	button.button_up.connect(_on_button_up.bind(button))
-
-
-func _on_button_mouse_entered(button: Button) -> void:
-	if button.disabled:
-		return
-
-	_tween_button_scale(button, Vector2(1.04, 1.04), 0.08)
-
-
-func _on_button_mouse_exited(button: Button) -> void:
-	_tween_button_scale(button, Vector2.ONE, 0.10)
-
-
-func _on_button_down(button: Button) -> void:
-	if button.disabled:
-		return
-
-	_tween_button_scale(button, Vector2(0.96, 0.96), 0.05)
-
-
-func _on_button_up(button: Button) -> void:
-	if button.disabled:
-		_tween_button_scale(button, Vector2.ONE, 0.08)
-		return
-
-	var target_scale := Vector2(1.04, 1.04) if button.get_global_rect().has_point(get_global_mouse_position()) else Vector2.ONE
-	_tween_button_scale(button, target_scale, 0.08)
-
-
-func _tween_button_scale(button: Button, target_scale: Vector2, duration: float) -> void:
-	button.pivot_offset = button.size * 0.5
-	var tween := create_tween()
-	tween.tween_property(button, "scale", target_scale, duration).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	JuiceManager.wire_button(button)
 
 
 func _update_chip_physics(delta: float) -> void:
@@ -819,13 +782,13 @@ func _on_increase_bet_pressed() -> void:
 
 func _on_max_bet_pressed() -> void:
 	bet_input.value = max(1, run_manager.money)
-	JuiceFx.pulse_node(bet_input, 1.08, 0.16)
+	JuiceManager.pulse_label(bet_input, 1.08, 0.16)
 
 
 func _change_bet(amount: int) -> void:
 	var next_bet := clampi(int(bet_input.value) + amount, 1, max(1, run_manager.money))
 	bet_input.value = next_bet
-	JuiceFx.pulse_node(bet_input, 1.08, 0.16)
+	JuiceManager.pulse_label(bet_input, 1.08, 0.16)
 
 
 func _on_deal_pressed() -> void:
@@ -949,16 +912,7 @@ func _apply_round_result(result: String) -> void:
 
 
 func _spawn_money_popup(delta: int) -> void:
-	if delta == 0:
-		return
-
-	var popup := NUMBER_POPUP_SCENE.instantiate() as NumberPopup
-	var style := NumberPopup.PopupStyle.POSITIVE if delta > 0 else NumberPopup.PopupStyle.NEGATIVE
-	var prefix := "+" if delta > 0 else ""
-	popup.setup("%s$%d" % [prefix, delta], style)
-	popup.position = money_label.get_global_rect().get_center() + Vector2(-70.0, 12.0)
-	add_child(popup)
-	popup.play()
+	JuiceManager.play_money_popup(self, money_label, delta)
 
 
 func _start_stage_clear_feedback() -> void:
@@ -966,25 +920,18 @@ func _start_stage_clear_feedback() -> void:
 		return
 
 	is_stage_clear_sequence_playing = true
-	JuiceFx.pulse_node(money_label, 1.22, 0.26)
-	JuiceFx.pulse_node(debt_label, 1.24, 0.28)
-	_flash_screen(Color(1.0, 0.82, 0.18, 0.30))
-	_show_result_burst("DŁUG SPŁACONY", GOLD, 1.18)
-	JuiceFx.delayed_call(self, 0.82, Callable(self, "_finish_stage_clear_feedback"))
+	JuiceManager.play_stage_success(self, result_burst_label, money_label, debt_label, flash_overlay)
+	JuiceTweenFactory.delayed_call(self, 0.82, Callable(self, "_finish_stage_clear_feedback"))
 
 
 func _finish_stage_clear_feedback() -> void:
 	is_stage_clear_sequence_playing = false
 	_update_ui()
-	JuiceFx.pop_in(reward_panel, 0.22)
+	JuiceManager.play_reward_anticipation(reward_panel)
 
 
 func _start_game_over_feedback() -> void:
-	JuiceFx.shake_node(table_area_root, 11.0, 0.28)
-	JuiceFx.shake_node(message_label, 9.0, 0.25)
-	_show_result_burst("KASYNO WYGRYWA", PINK, 1.04)
-	if is_instance_valid(background_shade):
-		background_shade.color = Color(0.02, 0.00, 0.03, 0.34)
+	JuiceManager.play_failure(self, table_area_root, result_burst_label, message_label, background_shade)
 
 
 func _update_ui() -> void:
@@ -1240,108 +1187,37 @@ func _animate_card_enter(visual_layer: Control, delay: float = 0.0) -> void:
 	var final_global_position := visual_layer.global_position
 	var viewport_size := get_viewport_rect().size
 	var deck_global_position := Vector2(viewport_size.x - 150.0, viewport_size.y * 0.50)
-	visual_layer.global_position = deck_global_position
-	visual_layer.rotation_degrees = final_rotation + randf_range(-13.0, 13.0)
-
-	var tween := create_tween()
-	tween.set_parallel(true)
-	tween.tween_property(visual_layer, "global_position", final_global_position, CARD_ENTER_TIME + 0.06).set_delay(delay).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-	tween.tween_property(visual_layer, "scale", Vector2.ONE, CARD_ENTER_TIME + 0.04).set_delay(delay).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tween.tween_property(visual_layer, "modulate:a", 1.0, CARD_ENTER_TIME * 0.8).set_delay(delay)
-	tween.tween_property(visual_layer, "rotation_degrees", final_rotation, CARD_ENTER_TIME + 0.04).set_delay(delay).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tween.chain().tween_callback(func() -> void:
-		if is_instance_valid(visual_layer):
-			JuiceFx.pulse_node(visual_layer, 1.05, 0.10)
-	)
+	JuiceManager.play_card_draw(visual_layer, deck_global_position, final_global_position, final_rotation, delay)
 
 
 func _on_card_mouse_entered(visual_layer: Control) -> void:
 	if not is_instance_valid(visual_layer):
 		return
 
-	var tween := create_tween()
-	tween.set_parallel(true)
-	tween.tween_property(visual_layer, "position", CARD_HOVER_OFFSET, CARD_HOVER_TIME).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
-	tween.tween_property(visual_layer, "scale", Vector2(1.07, 1.07), CARD_HOVER_TIME).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	JuiceManager.play_hover_effect(visual_layer, true, CARD_HOVER_OFFSET)
 
 
 func _on_card_mouse_exited(visual_layer: Control) -> void:
 	if not is_instance_valid(visual_layer):
 		return
 
-	var tween := create_tween()
-	tween.set_parallel(true)
-	tween.tween_property(visual_layer, "position", Vector2.ZERO, CARD_HOVER_TIME).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
-	tween.tween_property(visual_layer, "scale", Vector2.ONE, CARD_HOVER_TIME).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	JuiceManager.play_hover_effect(visual_layer, false, CARD_HOVER_OFFSET)
 
 
 func _pulse_message() -> void:
-	JuiceFx.pulse_node(message_label, 1.05, 0.18)
+	JuiceManager.pulse_label(message_label, 1.05, 0.18)
 
 
 func _play_result_feedback(result: String, payout: int) -> void:
 	match result:
 		BlackjackResult.PLAYER_BLACKJACK:
-			_flash_screen(Color(1.0, 0.77, 0.16, 0.30))
-			_show_result_burst("BLACKJACK! +$%d" % payout, Color(1.0, 0.82, 0.18), 1.25)
-			JuiceFx.shake_node(result_burst_label, 8.0, 0.18)
-			JuiceFx.flash_node(money_label, Color(1.0, 0.96, 0.36), 0.25)
-			JuiceFx.pulse_node(money_label, 1.18, 0.22)
-			JuiceFx.pulse_node(debt_label, 1.14, 0.20)
+			JuiceManager.play_blackjack(self, result_burst_label, money_label, debt_label, flash_overlay, payout)
 		BlackjackResult.PLAYER_WIN, BlackjackResult.DEALER_BUST:
-			_flash_screen(Color(0.16, 0.94, 0.84, 0.22))
-			_show_result_burst("WIN +$%d" % payout, Color(0.20, 1.0, 0.84), 1.0)
-			JuiceFx.pulse_node(money_label, 1.12, 0.18)
+			JuiceManager.play_round_win(self, result_burst_label, money_label, flash_overlay, payout)
 		BlackjackResult.PUSH:
-			_flash_screen(Color(0.70, 0.82, 1.0, 0.16))
-			_show_result_burst("PUSH", Color(0.72, 0.86, 1.0), 0.92)
+			JuiceManager.play_round_push(result_burst_label, flash_overlay)
 		BlackjackResult.DEALER_BLACKJACK, BlackjackResult.DEALER_WIN, BlackjackResult.PLAYER_BUST:
-			_flash_screen(Color(1.0, 0.10, 0.28, 0.22))
-			_show_result_burst(_get_loss_burst_text(result), Color(1.0, 0.18, 0.36), 1.0)
-			JuiceFx.shake_node(message_label, 7.0, 0.22)
-
-
-func _flash_screen(color: Color) -> void:
-	if not is_instance_valid(flash_overlay):
-		return
-
-	flash_overlay.modulate = color
-	var tween := create_tween()
-	tween.tween_property(flash_overlay, "modulate:a", 0.0, 0.30).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
-
-
-func _show_result_burst(text: String, color: Color, intensity: float = 1.0) -> void:
-	if not is_instance_valid(result_burst_label):
-		return
-
-	result_burst_label.text = text
-	result_burst_label.add_theme_font_size_override("font_size", int(52.0 * intensity))
-	result_burst_label.visible = true
-	result_burst_label.pivot_offset = size * 0.5
-	result_burst_label.position = Vector2(0, 18)
-	result_burst_label.scale = Vector2(0.62, 0.62)
-	result_burst_label.modulate = Color(color.r, color.g, color.b, 0.0)
-
-	var tween := create_tween()
-	tween.set_parallel(true)
-	tween.tween_property(result_burst_label, "position", Vector2.ZERO, 0.18).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tween.tween_property(result_burst_label, "scale", Vector2.ONE * intensity, 0.18).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tween.tween_property(result_burst_label, "modulate:a", 1.0, 0.08)
-	tween.chain().tween_interval(0.48)
-	tween.chain().tween_property(result_burst_label, "modulate:a", 0.0, 0.22).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
-	tween.tween_callback(func() -> void:
-		if is_instance_valid(result_burst_label):
-			result_burst_label.visible = false
-			result_burst_label.scale = Vector2.ONE
-	)
-
-
-func _shake_control(control: Control, strength: float = 7.0) -> void:
-	JuiceFx.shake_node(control, strength, 0.20)
-
-
-func _pulse_control(control: Control) -> void:
-	JuiceFx.pulse_node(control, 1.04, 0.20)
+			JuiceManager.play_round_loss(result_burst_label, message_label, flash_overlay, _get_loss_burst_text(result))
 
 
 func _create_corner_label(card: CardData, flipped: bool) -> Control:

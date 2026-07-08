@@ -35,7 +35,7 @@ func setup(text_value: String, popup_style: PopupStyle = PopupStyle.NEUTRAL) -> 
 
 
 func play(distance: float = 58.0, duration: float = 0.72) -> void:
-	JuiceFx.pop_in(self, 0.16)
+	JuiceTweenFactory.pop_in(self, 0.16)
 	var tween := create_tween()
 	tween.tween_interval(0.12)
 	tween.tween_property(self, "position", position + Vector2(0.0, -distance), duration).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)

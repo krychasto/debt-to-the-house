@@ -6,13 +6,14 @@ Pierwszy juice pass ma sprawić, że prototyp blackjacka daje szybszy i mocniejs
 
 ## Dodane systemy
 
-- `scripts/ui/juice_fx.gd` - reużywalne helpery do animacji UI:
-  - `pulse_node`
-  - `shake_node`
-  - `flash_node`
-  - `pop_in`
-  - `float_up_and_fade`
-  - `delayed_call`
+- `scripts/ui/juice/` - modularny framework efektów UI z centralnym `JuiceManager`.
+- `scripts/ui/juice/TweenFactory.gd` - reużywalne tweeny:
+  - pulse
+  - shake przez moduł `Shake`
+  - flash
+  - pop in
+  - float up and fade
+  - delayed call
 - `scripts/ui/number_popup.gd` i `scenes/ui/NumberPopup.tscn` - pop-upy liczb dla zmian pieniędzy, tokenów i przyszłych nagród.
 - `scripts/ui/blackjack_table.gd` używa teraz efektów do:
   - pop-upów pieniędzy po rozdaniu,
