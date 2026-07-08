@@ -99,8 +99,8 @@ Przykład:
 ```gdscript
 RelicData.new(
 	"lucky_ace",
-	"Lucky Ace",
-	"Target score +1.",
+	"Szczęśliwy As",
+	"Cel punktowy +1.",
 	RelicData.TARGET_SCORE,
 	1.0,
 	RelicData.RARITY_RARE,

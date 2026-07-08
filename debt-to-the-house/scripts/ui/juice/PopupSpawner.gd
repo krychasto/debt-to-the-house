@@ -19,7 +19,7 @@ static func spawn_token_popup(parent: Control, anchor: Control, amount: int) -> 
 
 	var prefix := "+" if amount > 0 else ""
 	var style := NumberPopup.PopupStyle.POSITIVE if amount > 0 else NumberPopup.PopupStyle.NEGATIVE
-	return spawn_popup(parent, "%s%d Tokens" % [prefix, amount], anchor.get_global_rect().get_center() + Vector2(-70.0, 12.0), style)
+	return spawn_popup(parent, "%s%d Żetony" % [prefix, amount], anchor.get_global_rect().get_center() + Vector2(-70.0, 12.0), style)
 
 
 static func spawn_combo_popup(parent: Control, text: String, global_position: Vector2) -> NumberPopup:

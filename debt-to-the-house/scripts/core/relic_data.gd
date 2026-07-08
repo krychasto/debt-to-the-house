@@ -59,4 +59,16 @@ func get_reward_text() -> String:
 
 
 func get_rarity_label() -> String:
+	match rarity:
+		RARITY_COMMON:
+			return "ZWYKŁY"
+		RARITY_UNCOMMON:
+			return "NIEZWYKŁY"
+		RARITY_RARE:
+			return "RZADKI"
+		RARITY_EPIC:
+			return "EPICKI"
+		RARITY_LEGENDARY:
+			return "LEGENDARNY"
+
 	return rarity.to_upper()

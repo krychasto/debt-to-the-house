@@ -148,7 +148,7 @@ static func play_blackjack(root: Control, banner: Label, money_label: Control, d
 static func play_round_win(root: Control, banner: Label, money_label: Control, flash_overlay: ColorRect, payout: int) -> void:
 	flash_overlay.modulate = Color(0.16, 0.94, 0.84, 0.22)
 	JuiceTweenFactory.fade_to(flash_overlay, 0.0, 0.30)
-	show_result_banner(banner, "WIN +$%d" % payout, Color(0.20, 1.0, 0.84), 1.0)
+	show_result_banner(banner, "WYGRANA +$%d" % payout, Color(0.20, 1.0, 0.84), 1.0)
 	pulse_label(money_label, 1.12, 0.18)
 	JuiceParticleSpawner.spawn_burst(root, banner.get_global_rect().get_center(), Color(0.20, 1.0, 0.84, 0.78), 12, 56.0)
 
@@ -156,7 +156,7 @@ static func play_round_win(root: Control, banner: Label, money_label: Control, f
 static func play_round_push(banner: Label, flash_overlay: ColorRect) -> void:
 	flash_overlay.modulate = Color(0.70, 0.82, 1.0, 0.16)
 	JuiceTweenFactory.fade_to(flash_overlay, 0.0, 0.30)
-	show_result_banner(banner, "PUSH", Color(0.72, 0.86, 1.0), 0.92)
+	show_result_banner(banner, "REMIS", Color(0.72, 0.86, 1.0), 0.92)
 
 
 static func play_round_loss(banner: Label, message_label: Control, flash_overlay: ColorRect, text: String) -> void:

@@ -14,71 +14,71 @@ static func get_all_relics() -> Array[RelicData]:
 	return [
 		RelicData.new(
 			"soft_ceiling",
-			"Soft Ceiling",
-			"Target score +1.",
+			"Miękki Limit",
+			"Cel punktowy +1.",
 			RelicData.TARGET_SCORE,
 			1.0,
 			RelicData.RARITY_COMMON,
-			["ace"]
+			["ace", "target_score", "safety"]
 		),
 		RelicData.new(
 			"dealer_nerves",
-			"Dealer Nerves",
-			"Dealer stands 1 point earlier.",
+			"Nerwy Krupiera",
+			"Krupier zostaje 1 punkt wcześniej.",
 			RelicData.DEALER_STAND_SCORE,
 			-1.0,
 			RelicData.RARITY_COMMON,
-			["dealer"]
+			["dealer", "safety"]
 		),
 		RelicData.new(
 			"gold_blackjack",
-			"Gold Blackjack",
-			"Blackjack payout +0.5.",
+			"Złoty Blackjack",
+			"Wypłata za blackjacka +0.5.",
 			RelicData.BLACKJACK_PAYOUT,
 			0.5,
 			RelicData.RARITY_RARE,
-			["blackjack", "money"]
+			["blackjack", "money", "payout"]
 		),
 		RelicData.new(
 			"sharp_tables",
-			"Sharp Tables",
-			"Normal win payout +0.25.",
+			"Ostre Stoły",
+			"Wypłata za zwykłą wygraną +0.25.",
 			RelicData.WIN_PAYOUT,
 			0.25,
 			RelicData.RARITY_UNCOMMON,
-			["money"]
+			["money", "payout"]
 		),
 		RelicData.new(
 			"royal_debt",
-			"Royal Debt",
-			"Face cards are worth +1.",
+			"Królewski Dług",
+			"Figury są warte +1.",
 			RelicData.FACE_CARD_VALUE,
 			1.0,
 			RelicData.RARITY_EPIC,
-			["risk", "face"]
+			["king", "queen", "risk", "payout"]
 		),
 		RelicData.new(
 			"house_coupon",
-			"House Coupon",
-			"Normal win payout +0.1.",
+			"Kupon Kasyna",
+			"Wypłata za zwykłą wygraną +0.1.",
 			RelicData.WIN_PAYOUT,
 			0.1,
 			RelicData.RARITY_COMMON,
-			["money"]
+			["money", "payout", "safety"]
 		),
 		RelicData.new(
 			"soft_ace",
-			"Soft Ace",
-			"Target score +1.",
+			"Miękki As",
+			"Cel punktowy +1.",
 			RelicData.TARGET_SCORE,
 			1.0,
 			RelicData.RARITY_UNCOMMON,
-			["ace"]
+			["ace", "target_score"]
 		),
 		RelicData.new(
 			"dealer_heat",
-			"Dealer Heat",
-			"Dealer stands 1 point later.",
+			"Gorączka Krupiera",
+			"Krupier zostaje 1 punkt później.",
 			RelicData.DEALER_STAND_SCORE,
 			1.0,
 			RelicData.RARITY_RARE,
@@ -86,12 +86,12 @@ static func get_all_relics() -> Array[RelicData]:
 		),
 		RelicData.new(
 			"blackjack_crown",
-			"Blackjack Crown",
-			"Blackjack payout +1.0.",
+			"Korona Blackjacka",
+			"Wypłata za blackjacka +1.0.",
 			RelicData.BLACKJACK_PAYOUT,
 			1.0,
 			RelicData.RARITY_LEGENDARY,
-			["blackjack", "money"]
+			["blackjack", "money", "payout"]
 		),
 	]
 

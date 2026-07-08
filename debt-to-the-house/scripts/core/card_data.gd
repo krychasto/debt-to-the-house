@@ -26,4 +26,18 @@ static func get_default_base_value(card_rank: String) -> int:
 
 
 func get_display_name() -> String:
-	return "%s of %s" % [rank, suit]
+	return "%s %s" % [rank, get_suit_display_name(suit)]
+
+
+static func get_suit_display_name(card_suit: String) -> String:
+	match card_suit:
+		"Spades":
+			return "Pik"
+		"Hearts":
+			return "Kier"
+		"Diamonds":
+			return "Karo"
+		"Clubs":
+			return "Trefl"
+
+	return card_suit
