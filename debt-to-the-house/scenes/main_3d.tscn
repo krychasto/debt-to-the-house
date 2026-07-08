@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://dwdyowoo3f1od"]
+
+[ext_resource type="Script" uid="uid://doojignj5nlsy" path="res://scripts/ui/blackjack_table_3d.gd" id="1_blackjack_table_3d"]
+
+[node name="Main3D" type="Node3D" unique_id=1219133014]
+script = ExtResource("1_blackjack_table_3d")
