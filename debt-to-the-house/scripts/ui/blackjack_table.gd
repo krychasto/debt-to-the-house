@@ -1109,15 +1109,7 @@ func _on_reward_pressed(index: int) -> void:
 
 	var relic := current_reward_choices[index]
 	run_manager.add_relic(relic, engine.rules)
-	run_manager.advance_stage()
-	run_manager.rebuild_effective_state(engine.rules)
-	engine.reset_round()
-	_clear_bet_chips()
-	should_hide_dealer_hole = true
-	should_animate_dealer_reveal = false
-	current_reward_choices.clear()
-	message_label.text = "%s zdobyty. Etap %d. Dług wzrósł." % [relic.display_name, run_manager.stage]
-	_update_ui()
+	_complete_reward_choice(relic)
 
 
 func _on_reward_card_pressed(card: Button) -> void:
@@ -1145,6 +1137,10 @@ func _on_reward_card_pressed(card: Button) -> void:
 
 	run_manager.add_relic(relic, engine.rules)
 	await _play_new_synergy_feedback()
+	_complete_reward_choice(relic)
+
+
+func _complete_reward_choice(relic: RelicData) -> void:
 	run_manager.advance_stage()
 	run_manager.rebuild_effective_state(engine.rules)
 	engine.reset_round()
@@ -1155,6 +1151,12 @@ func _on_reward_card_pressed(card: Button) -> void:
 	reward_card_views.clear()
 	reward_overlay.visible = false
 	reward_message_label.visible = false
+	if run_manager.is_stage_success():
+		message_label.text = "DŁUG SPŁACONY"
+		_update_ui()
+		_start_stage_clear_feedback()
+		return
+
 	message_label.text = "%s zdobyty. Etap %d." % [relic.display_name, run_manager.stage]
 	_update_ui()
 
