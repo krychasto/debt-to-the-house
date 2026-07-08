@@ -15,7 +15,7 @@ static func get_all_relics() -> Array[RelicData]:
 		RelicData.new(
 			"soft_ceiling",
 			"Miękki Limit",
-			"Cel punktowy +1.",
+			"Cel gry wzrasta do 22 dla gracza i krupiera. Blackjack też wymaga trafienia 22 w 2 kartach.",
 			RelicData.TARGET_SCORE,
 			1.0,
 			RelicData.RARITY_COMMON,
@@ -24,7 +24,7 @@ static func get_all_relics() -> Array[RelicData]:
 		RelicData.new(
 			"dealer_nerves",
 			"Nerwy Krupiera",
-			"Krupier zostaje 1 punkt wcześniej.",
+			"Krupier przestaje dobierać o 1 punkt wcześniej. Przy zwykłych zasadach staje od 16 zamiast od 17.",
 			RelicData.DEALER_STAND_SCORE,
 			-1.0,
 			RelicData.RARITY_COMMON,
@@ -33,7 +33,7 @@ static func get_all_relics() -> Array[RelicData]:
 		RelicData.new(
 			"gold_blackjack",
 			"Złoty Blackjack",
-			"Wypłata za blackjacka +0.5.",
+			"Blackjack wypłaca o 0.5 stawki więcej. Działa tylko przy naturalnym blackjacku w 2 kartach.",
 			RelicData.BLACKJACK_PAYOUT,
 			0.5,
 			RelicData.RARITY_RARE,
@@ -42,7 +42,7 @@ static func get_all_relics() -> Array[RelicData]:
 		RelicData.new(
 			"sharp_tables",
 			"Ostre Stoły",
-			"Wypłata za zwykłą wygraną +0.25.",
+			"Zwykła wygrana wypłaca o 0.25 stawki więcej. Nie zmienia blackjacka ani remisu.",
 			RelicData.WIN_PAYOUT,
 			0.25,
 			RelicData.RARITY_UNCOMMON,
@@ -51,7 +51,7 @@ static func get_all_relics() -> Array[RelicData]:
 		RelicData.new(
 			"royal_debt",
 			"Królewski Dług",
-			"Figury są warte +1.",
+			"J, Q i K są warte 11 zamiast 10 dla gracza i krupiera. Mocniejsze ręce, ale łatwiej przebić.",
 			RelicData.FACE_CARD_VALUE,
 			1.0,
 			RelicData.RARITY_EPIC,
@@ -60,7 +60,7 @@ static func get_all_relics() -> Array[RelicData]:
 		RelicData.new(
 			"house_coupon",
 			"Kupon Kasyna",
-			"Wypłata za zwykłą wygraną +0.1.",
+			"Zwykła wygrana wypłaca o 0.1 stawki więcej. Bezpieczny mały bonus do ekonomii.",
 			RelicData.WIN_PAYOUT,
 			0.1,
 			RelicData.RARITY_COMMON,
@@ -69,7 +69,7 @@ static func get_all_relics() -> Array[RelicData]:
 		RelicData.new(
 			"soft_ace",
 			"Miękki As",
-			"Cel punktowy +1.",
+			"Cel gry wzrasta do 22 dla gracza i krupiera. Łączy się z innymi reliktami od asów.",
 			RelicData.TARGET_SCORE,
 			1.0,
 			RelicData.RARITY_UNCOMMON,
@@ -78,7 +78,7 @@ static func get_all_relics() -> Array[RelicData]:
 		RelicData.new(
 			"dealer_heat",
 			"Gorączka Krupiera",
-			"Krupier zostaje 1 punkt później.",
+			"Krupier dobiera dłużej i staje o 1 punkt później. Przy zwykłych zasadach staje od 18 zamiast od 17.",
 			RelicData.DEALER_STAND_SCORE,
 			1.0,
 			RelicData.RARITY_RARE,
@@ -87,7 +87,7 @@ static func get_all_relics() -> Array[RelicData]:
 		RelicData.new(
 			"blackjack_crown",
 			"Korona Blackjacka",
-			"Wypłata za blackjacka +1.0.",
+			"Blackjack wypłaca o 1.0 stawki więcej. Bardzo mocne, ale działa tylko na naturalnego blackjacka.",
 			RelicData.BLACKJACK_PAYOUT,
 			1.0,
 			RelicData.RARITY_LEGENDARY,
