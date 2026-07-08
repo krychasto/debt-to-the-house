@@ -1,13 +1,30 @@
 extends Node3D
 class_name ConceptCasinoTable
 
+const DEFAULT_BET := 10
+const CARD_BACK_TEXTURE := preload("res://assets/ui/card_back.png")
+const CARD_FRONT_TEXTURE := preload("res://assets/ui/card_front.png")
 const TABLE_SIZE := Vector2(11.8, 6.6)
 const SURFACE_Y := 0.0
 const PANEL_Y := 0.045
 const DETAIL_Y := 0.088
 const NEON_Y := 0.115
+const CARD_SIZE := Vector2(0.68, 0.94)
+const CARD_Y := 0.19
+const CARD_SPACING := 0.56
 const CYAN := Color(0.25, 1.0, 1.0)
 const PURPLE := Color(0.82, 0.45, 1.0)
+
+var engine: BlackjackEngine = BlackjackEngine.new()
+var run_manager: RunManager = RunManager.new()
+var bet: int = DEFAULT_BET
+var dealer_cards_root: Node3D
+var player_cards_root: Node3D
+var status_label: Label3D
+var dealer_score_label: Label3D
+var player_score_label: Label3D
+var message_label: Label3D
+var buttons: Dictionary = {}
 
 var mat_floor: StandardMaterial3D
 var mat_base: StandardMaterial3D
@@ -23,6 +40,7 @@ var mat_circuit: StandardMaterial3D
 
 
 func _ready() -> void:
+	add_child(run_manager)
 	_build_materials()
 	_add_world()
 	_add_camera()
@@ -35,6 +53,8 @@ func _ready() -> void:
 	_add_slot_panels()
 	_add_corners_and_cutouts()
 	_add_wear()
+	_add_gameplay_layer()
+	_update_view()
 
 
 func _build_materials() -> void:
@@ -70,22 +90,15 @@ func _add_world() -> void:
 
 
 func _add_camera() -> void:
-	var rig := ConceptCameraController.new()
-	rig.name = "CameraRig"
-	rig.yaw_degrees = 0.0
-	rig.pitch_degrees = -58.0
-	rig.distance = 8.7
-	add_child(rig)
-
 	var camera := Camera3D.new()
 	camera.name = "ConceptCamera"
 	camera.current = true
-	camera.fov = 48.0
+	camera.position = Vector3(0.0, 6.4, 5.9)
+	camera.rotation_degrees = Vector3(-58.0, 0.0, 0.0)
+	camera.fov = 46.0
 	camera.near = 0.05
 	camera.far = 80.0
-	rig.camera = camera
-	rig.add_child(camera)
-	rig.call_deferred("_update_camera")
+	add_child(camera)
 
 
 func _add_lights() -> void:
@@ -217,6 +230,321 @@ func _add_wear() -> void:
 		scuff.rotation_degrees.y = rng.randf_range(0.0, 180.0)
 
 
+func _add_gameplay_layer() -> void:
+	status_label = _create_table_label(Vector3(-4.95, 0.20, -2.90), 20)
+	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	add_child(status_label)
+
+	var dealer_title := _create_table_label(Vector3(-2.70, 0.20, -1.98), 21)
+	dealer_title.text = "KRUPIER"
+	dealer_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	add_child(dealer_title)
+
+	var player_title := _create_table_label(Vector3(-2.70, 0.20, 1.58), 21)
+	player_title.text = "GRACZ"
+	player_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	add_child(player_title)
+
+	dealer_score_label = _create_table_label(Vector3(2.55, 0.20, -1.98), 22)
+	dealer_score_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	add_child(dealer_score_label)
+
+	player_score_label = _create_table_label(Vector3(2.55, 0.20, 1.58), 22)
+	player_score_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	add_child(player_score_label)
+
+	message_label = _create_table_label(Vector3(0.0, 0.20, -0.08), 20)
+	message_label.text = "Ustaw stawkę i rozdaj."
+	add_child(message_label)
+
+	dealer_cards_root = Node3D.new()
+	dealer_cards_root.position = Vector3(0.0, CARD_Y, -1.28)
+	add_child(dealer_cards_root)
+
+	player_cards_root = Node3D.new()
+	player_cards_root.position = Vector3(0.0, CARD_Y, 1.18)
+	add_child(player_cards_root)
+
+	_add_button("bet_down", "-5", Vector3(-2.65, 0.20, 2.88), Vector2(0.55, 0.34))
+	_add_button("bet_up", "+5", Vector3(-1.98, 0.20, 2.88), Vector2(0.55, 0.34))
+	_add_button("max_bet", "MAX", Vector3(-1.22, 0.20, 2.88), Vector2(0.70, 0.34))
+	_add_button("deal", "ROZDAJ", Vector3(-0.22, 0.20, 2.88), Vector2(0.90, 0.38))
+	_add_button("hit", "DOBIERZ", Vector3(0.86, 0.20, 2.88), Vector2(0.98, 0.38))
+	_add_button("stand", "STÓJ", Vector3(1.96, 0.20, 2.88), Vector2(0.84, 0.38))
+	_add_button("retry", "OD NOWA", Vector3(3.02, 0.20, 2.88), Vector2(0.98, 0.38))
+
+
+func _add_button(action: String, text: String, position: Vector3, size: Vector2) -> void:
+	var root := Node3D.new()
+	root.name = "Button_%s" % action
+	root.position = position
+	add_child(root)
+
+	var base := MeshInstance3D.new()
+	var box := BoxMesh.new()
+	box.size = Vector3(size.x, 0.075, size.y)
+	base.mesh = box
+	base.position = Vector3.ZERO
+	base.material_override = _make_metal(Color(0.055, 0.030, 0.045), 0.18, 0.62)
+	root.add_child(base)
+
+	var glow := _add_box("ButtonGlow", position + Vector3(0.0, 0.052, 0.0), Vector3(size.x * 0.92, 0.018, 0.030), mat_cyan)
+	glow.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+
+	var area := Area3D.new()
+	var shape := CollisionShape3D.new()
+	var box_shape := BoxShape3D.new()
+	box_shape.size = Vector3(size.x, 0.22, size.y)
+	shape.shape = box_shape
+	area.add_child(shape)
+	area.input_event.connect(_on_button_input.bind(action))
+	root.add_child(area)
+
+	var label := _create_table_label(Vector3(0.0, 0.075, 0.0), 13)
+	label.text = text
+	root.add_child(label)
+
+	buttons[action] = {
+		"root": root,
+		"mesh": base,
+		"label": label,
+		"glow": glow,
+		"enabled": true,
+	}
+
+
+func _on_button_input(_camera: Node, event: InputEvent, _position: Vector3, _normal: Vector3, _shape_idx: int, action: String) -> void:
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		if not buttons.get(action, {}).get("enabled", false):
+			return
+		_handle_action(action)
+
+
+func _handle_action(action: String) -> void:
+	match action:
+		"bet_down":
+			bet = clampi(bet - 5, 1, max(1, run_manager.money))
+		"bet_up":
+			bet = clampi(bet + 5, 1, max(1, run_manager.money))
+		"max_bet":
+			bet = max(1, run_manager.money)
+		"deal":
+			_start_hand()
+		"hit":
+			_hit()
+		"stand":
+			_stand()
+		"retry":
+			_retry()
+
+	_update_view()
+
+
+func _start_hand() -> void:
+	if not run_manager.start_hand(bet):
+		message_label.text = "Nie możesz zagrać z taką stawką."
+		return
+
+	engine.start_round(bet)
+	message_label.text = "Twój ruch."
+
+	var opening_result := engine.resolve_round() if _has_opening_blackjack() else ""
+	if opening_result != "":
+		_apply_round_result(opening_result)
+
+
+func _hit() -> void:
+	var result := engine.player_hit()
+	if result != "":
+		_apply_round_result(result)
+	else:
+		message_label.text = "Karta dobrana."
+
+
+func _stand() -> void:
+	var result := engine.player_stand()
+	if result != "":
+		_apply_round_result(result)
+
+
+func _retry() -> void:
+	run_manager.reset_run()
+	engine = BlackjackEngine.new()
+	bet = DEFAULT_BET
+	message_label.text = "Nowy run."
+
+
+func _has_opening_blackjack() -> bool:
+	return engine.player_hand.is_blackjack(engine.rules) or engine.dealer_hand.is_blackjack(engine.rules)
+
+
+func _apply_round_result(result: String) -> void:
+	var money_before := run_manager.money
+	var payout := run_manager.apply_result(result, engine.current_bet, engine.rules)
+	message_label.text = "%s $%d -> $%d" % [_get_result_text(result), money_before, run_manager.money]
+	if payout > 0:
+		message_label.text += " (+$%d)" % payout
+
+	if run_manager.is_stage_success():
+		message_label.text += " DŁUG SPŁACONY."
+	elif run_manager.is_game_over():
+		message_label.text += " KASYNO WYGRYWA."
+
+
+func _update_view() -> void:
+	status_label.text = "Debt to the House\nEtap %d | Kasa $%d | Stawka $%d\nDług $%d | Rozdania %d | Combo %s" % [
+		run_manager.stage,
+		run_manager.money,
+		bet,
+		run_manager.debt_target,
+		run_manager.hands_left,
+		run_manager.get_combo_display_text(),
+	]
+
+	var player_value := engine.player_hand.get_value(engine.rules) if not engine.player_hand.cards.is_empty() else 0
+	var dealer_value := engine.dealer_hand.get_value(engine.rules) if not engine.dealer_hand.cards.is_empty() else 0
+	player_score_label.text = "PUNKTY %d" % player_value if player_value > 0 else "PUNKTY -"
+	dealer_score_label.text = "PUNKTY ?" if engine.is_round_active and engine.dealer_hand.cards.size() > 1 else ("PUNKTY %d" % dealer_value if dealer_value > 0 else "PUNKTY -")
+
+	_render_cards(player_cards_root, engine.player_hand, false)
+	_render_cards(dealer_cards_root, engine.dealer_hand, engine.is_round_active)
+	_update_buttons()
+
+
+func _render_cards(root: Node3D, hand: Hand, hide_hole_card: bool) -> void:
+	for child: Node in root.get_children():
+		child.queue_free()
+
+	var count := hand.cards.size()
+	if count == 0:
+		return
+
+	var start_x := -((count - 1) * CARD_SPACING) * 0.5
+	for index: int in range(count):
+		var card := hand.cards[index]
+		var hidden := hide_hole_card and index == 1
+		var card_node := _create_card_3d(card, hidden)
+		card_node.position = Vector3(start_x + index * CARD_SPACING, index * 0.014, 0.0)
+		card_node.rotation_degrees = Vector3(0.0, randf_range(-2.4, 2.4), 0.0)
+		root.add_child(card_node)
+
+
+func _create_card_3d(card: CardData, hidden: bool) -> Node3D:
+	var root := Node3D.new()
+
+	var shadow := MeshInstance3D.new()
+	var shadow_mesh := PlaneMesh.new()
+	shadow_mesh.size = CARD_SIZE
+	shadow.mesh = shadow_mesh
+	shadow.position = Vector3(0.035, -0.012, 0.045)
+	shadow.material_override = _make_metal(Color(0.0, 0.0, 0.0, 0.46), 0.0, 0.94)
+	root.add_child(shadow)
+
+	var card_mesh := MeshInstance3D.new()
+	var plane := PlaneMesh.new()
+	plane.size = CARD_SIZE
+	card_mesh.mesh = plane
+	card_mesh.material_override = _make_texture_material(CARD_BACK_TEXTURE if hidden else CARD_FRONT_TEXTURE)
+	root.add_child(card_mesh)
+
+	if not hidden:
+		_add_card_labels(root, card)
+
+	return root
+
+
+func _add_card_labels(root: Node3D, card: CardData) -> void:
+	var suit := _get_suit_symbol(card.suit)
+	var color := _get_suit_color(card.suit)
+
+	var top := _create_table_label(Vector3(-0.22, 0.042, -0.30), 13)
+	top.text = "%s\n%s" % [card.rank, suit]
+	top.modulate = color
+	root.add_child(top)
+
+	var center := _create_table_label(Vector3(0.0, 0.048, 0.03), 31)
+	center.text = suit
+	center.modulate = color
+	root.add_child(center)
+
+
+func _update_buttons() -> void:
+	var stage_ready := run_manager.is_stage_success() and not engine.is_round_active
+	var game_over := run_manager.is_game_over() and not engine.is_round_active
+	_set_button_enabled("deal", not engine.is_round_active and not stage_ready and not game_over and run_manager.can_play_hand())
+	_set_button_enabled("hit", engine.is_round_active)
+	_set_button_enabled("stand", engine.is_round_active)
+	_set_button_enabled("retry", game_over)
+	_set_button_enabled("bet_down", not engine.is_round_active and not stage_ready and not game_over)
+	_set_button_enabled("bet_up", not engine.is_round_active and not stage_ready and not game_over)
+	_set_button_enabled("max_bet", not engine.is_round_active and not stage_ready and not game_over)
+
+
+func _set_button_enabled(action: String, enabled: bool) -> void:
+	if not buttons.has(action):
+		return
+
+	buttons[action]["enabled"] = enabled
+	var mesh := buttons[action]["mesh"] as MeshInstance3D
+	var label := buttons[action]["label"] as Label3D
+	var glow := buttons[action]["glow"] as MeshInstance3D
+	mesh.transparency = 0.0 if enabled else 0.48
+	label.modulate = Color(0.92, 1.0, 0.95) if enabled else Color(0.45, 0.43, 0.42)
+	glow.visible = enabled
+
+
+func _create_table_label(position: Vector3, font_size: int) -> Label3D:
+	var label := Label3D.new()
+	label.position = position
+	label.rotation_degrees = Vector3(-90.0, 0.0, 0.0)
+	label.billboard = BaseMaterial3D.BILLBOARD_DISABLED
+	label.font_size = font_size
+	label.modulate = Color(0.92, 0.94, 0.88)
+	label.outline_size = 6
+	label.outline_modulate = Color(0.01, 0.012, 0.014, 0.95)
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	return label
+
+
+func _get_suit_color(suit: String) -> Color:
+	if suit == "Hearts" or suit == "Diamonds":
+		return Color(0.70, 0.03, 0.06)
+	return Color(0.04, 0.035, 0.03)
+
+
+func _get_suit_symbol(suit: String) -> String:
+	match suit:
+		"Spades":
+			return "♠"
+		"Hearts":
+			return "♥"
+		"Diamonds":
+			return "♦"
+		"Clubs":
+			return "♣"
+	return "?"
+
+
+func _get_result_text(result: String) -> String:
+	match result:
+		BlackjackResult.PLAYER_BLACKJACK:
+			return "Blackjack."
+		BlackjackResult.DEALER_BLACKJACK:
+			return "Blackjack krupiera."
+		BlackjackResult.PLAYER_WIN:
+			return "Wygrywasz."
+		BlackjackResult.DEALER_WIN:
+			return "Krupier wygrywa."
+		BlackjackResult.PUSH:
+			return "Remis."
+		BlackjackResult.PLAYER_BUST:
+			return "Przebijasz."
+		BlackjackResult.DEALER_BUST:
+			return "Krupier przebija."
+	return "Runda rozliczona."
+
+
 func _add_circuit_panel(center: Vector3, size: Vector2, complexity: int) -> void:
 	_add_box("CircuitPanel", center, Vector3(size.x, 0.035, size.y), mat_dark_panel)
 	_add_rect_outline(center + Vector3(0.0, 0.018, 0.0), size, mat_line, 0.018)
@@ -317,4 +645,12 @@ func _make_emission(color: Color, energy: float) -> StandardMaterial3D:
 	material.emission = color
 	material.emission_energy_multiplier = energy
 	material.roughness = 0.38
+	return material
+
+
+func _make_texture_material(texture: Texture2D) -> StandardMaterial3D:
+	var material := StandardMaterial3D.new()
+	material.albedo_texture = texture
+	material.roughness = 0.70
+	material.metallic = 0.0
 	return material
