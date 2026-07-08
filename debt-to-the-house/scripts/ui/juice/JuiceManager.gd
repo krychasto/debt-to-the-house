@@ -136,7 +136,7 @@ static func pulse_label(label: Control, scale_amount: float = 1.08, duration: fl
 
 static func play_blackjack(root: Control, banner: Label, money_label: Control, debt_label: Control, flash_overlay: ColorRect, payout: int) -> void:
 	play_success_flash(flash_overlay)
-	show_result_banner(banner, "BLACKJACK! +$%d" % payout, Color(1.0, 0.82, 0.18), 1.25)
+	show_result_banner(banner, "BLACKJACK! +$%d" % payout, ThemeFactory.GOLD_SOFT, 1.30)
 	JuiceShake.shake_node(banner, 8.0, 0.18)
 	JuiceGlowController.success_flash(money_label)
 	pulse_label(money_label, 1.18, 0.22)
@@ -146,23 +146,23 @@ static func play_blackjack(root: Control, banner: Label, money_label: Control, d
 
 
 static func play_round_win(root: Control, banner: Label, money_label: Control, flash_overlay: ColorRect, payout: int) -> void:
-	flash_overlay.modulate = Color(0.16, 0.94, 0.84, 0.22)
+	flash_overlay.modulate = Color(0.16, 0.94, 0.52, 0.22)
 	JuiceTweenFactory.fade_to(flash_overlay, 0.0, 0.30)
-	show_result_banner(banner, "WYGRANA +$%d" % payout, Color(0.20, 1.0, 0.84), 1.0)
+	show_result_banner(banner, "WYGRANA +$%d" % payout, Color(0.68, 1.0, 0.48), 1.0)
 	pulse_label(money_label, 1.12, 0.18)
 	JuiceParticleSpawner.spawn_burst(root, banner.get_global_rect().get_center(), Color(0.20, 1.0, 0.84, 0.78), 12, 56.0)
 
 
 static func play_round_push(banner: Label, flash_overlay: ColorRect) -> void:
-	flash_overlay.modulate = Color(0.70, 0.82, 1.0, 0.16)
+	flash_overlay.modulate = Color(0.42, 0.58, 0.86, 0.16)
 	JuiceTweenFactory.fade_to(flash_overlay, 0.0, 0.30)
-	show_result_banner(banner, "REMIS", Color(0.72, 0.86, 1.0), 0.92)
+	show_result_banner(banner, "REMIS", Color(0.72, 0.82, 0.96), 0.92)
 
 
 static func play_round_loss(banner: Label, message_label: Control, flash_overlay: ColorRect, text: String) -> void:
-	flash_overlay.modulate = Color(1.0, 0.10, 0.28, 0.22)
+	flash_overlay.modulate = Color(ThemeFactory.DANGER_RED.r, ThemeFactory.DANGER_RED.g, ThemeFactory.DANGER_RED.b, 0.26)
 	JuiceTweenFactory.fade_to(flash_overlay, 0.0, 0.30)
-	show_result_banner(banner, text, Color(1.0, 0.18, 0.36), 1.0)
+	show_result_banner(banner, text, ThemeFactory.DANGER_RED, 1.0)
 	JuiceShake.shake_node(message_label, 7.0, 0.22)
 
 
@@ -191,6 +191,8 @@ static func show_result_banner(banner: Label, text: String, color: Color, intens
 
 	banner.text = text
 	banner.add_theme_font_size_override("font_size", int(52.0 * intensity))
+	banner.add_theme_color_override("font_outline_color", ThemeFactory.INK)
+	banner.add_theme_constant_override("outline_size", int(10.0 * intensity))
 	banner.visible = true
 	banner.pivot_offset = banner.size * 0.5
 	banner.position = Vector2(0.0, 18.0)
@@ -212,28 +214,8 @@ static func show_result_banner(banner: Label, text: String, color: Color, intens
 
 
 static func get_rarity_color(rarity: String) -> Color:
-	match rarity:
-		"uncommon":
-			return Color(0.34, 1.0, 0.60, 0.62)
-		"rare":
-			return Color(0.18, 0.64, 1.0, 0.72)
-		"epic":
-			return Color(0.78, 0.38, 1.0, 0.80)
-		"legendary":
-			return Color(1.0, 0.78, 0.16, 0.92)
-
-	return Color(0.92, 0.92, 0.86, 0.38)
+	return ThemeFactory.rarity_color(rarity)
 
 
 static func get_rarity_intensity(rarity: String) -> float:
-	match rarity:
-		"uncommon":
-			return 0.35
-		"rare":
-			return 0.65
-		"epic":
-			return 0.90
-		"legendary":
-			return 1.25
-
-	return 0.15
+	return ThemeFactory.rarity_intensity(rarity)
