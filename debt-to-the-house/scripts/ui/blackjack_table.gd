@@ -164,9 +164,9 @@ func _build_ui() -> void:
 	var player_panel := _build_hand_panel("Gracz", false)
 	table_area_root.add_child(player_panel)
 
-	root.add_child(_build_synergy_panel())
 	root.add_child(_build_controls())
 	_add_game_hud()
+	add_child(_build_synergy_panel())
 	add_child(_build_relic_drawer())
 	add_child(_build_reward_overlay())
 	add_child(_build_debug_panel())
@@ -628,6 +628,16 @@ func _build_relic_drawer() -> Control:
 func _build_synergy_panel() -> Control:
 	synergy_panel = PanelContainer.new()
 	synergy_panel.visible = false
+	synergy_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	synergy_panel.z_index = 20
+	synergy_panel.anchor_left = 0.5
+	synergy_panel.anchor_right = 0.5
+	synergy_panel.anchor_top = 0.0
+	synergy_panel.anchor_bottom = 0.0
+	synergy_panel.offset_left = -280.0
+	synergy_panel.offset_right = 280.0
+	synergy_panel.offset_top = 84.0
+	synergy_panel.offset_bottom = 152.0
 	synergy_panel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	synergy_panel.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	synergy_panel.custom_minimum_size = Vector2(560, 68)
@@ -635,6 +645,7 @@ func _build_synergy_panel() -> Control:
 	synergy_panel.add_theme_stylebox_override("panel", _make_style(Color(0.03, 0.01, 0.05, 0.50), Color(1.0, 0.43, 0.95, 0.55), 1, 8))
 
 	var box := VBoxContainer.new()
+	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	box.add_theme_constant_override("separation", 3)
 	synergy_panel.add_child(box)
 
@@ -648,6 +659,7 @@ func _build_synergy_panel() -> Control:
 	box.add_child(title)
 
 	var scroll := ScrollContainer.new()
+	scroll.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	scroll.custom_minimum_size = Vector2(520, 34)
 	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.size_flags_vertical = Control.SIZE_SHRINK_CENTER
@@ -656,6 +668,7 @@ func _build_synergy_panel() -> Control:
 	box.add_child(scroll)
 
 	synergy_list = VBoxContainer.new()
+	synergy_list.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	synergy_list.add_theme_constant_override("separation", 2)
 	synergy_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.add_child(synergy_list)
