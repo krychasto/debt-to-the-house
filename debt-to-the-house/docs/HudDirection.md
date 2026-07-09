@@ -14,24 +14,31 @@ Aktualna główna scena dodaje go jako 2D overlay. Stary górny pasek z wartośc
 HUD pokazuje:
 
 - Money
-- Debt
-- Hands Left
-- Stage
-- Tokens
-- Combo
+- Debt jako pasek postępu + liczba
+- jedną małą linię meta: `Stage X • Hands X • Combo X • 🪙 X`
 
-`Money` i `Debt` są największe. `Stage`, `Hands`, `Tokens` i `Combo` są mniejsze, żeby środek stołu został wolny dla kart.
+`Money` jest największym elementem HUD. `Debt` nie jest osobnym dużym panelem, tylko informacją o presji runu: pasek pokazuje, jak blisko gracz jest spłaty długu. Stage, Hands, Tokens i Combo nie mają osobnych boxów, żeby HUD nie tworzył chaosu i nie zabierał miejsca kartom.
+
+Punkty krupiera i gracza są tekstem bez ramek. Format przy stole ma być prosty:
+
+- `KRUPIER`
+- wynik
+- karty
+- `GRACZ`
+- wynik
+- karty
 
 ## Styl
 
 Kierunek wizualny to cyberpunkowy terminal/holograficzny panel:
 
-- ciemne półprzezroczyste tło,
-- cienka cyan/fioletowa linia,
+- jeden mocniejszy panel tylko dla Money,
+- Debt jako lekki pasek bez ciężkiej ramki,
+- jedna kompaktowa linia meta,
 - delikatny glow,
 - jasny czytelny tekst,
 - wartości większe niż etykiety,
-- bez ornamentów i ciężkiego gradientu.
+- bez dodatkowych ramek, ornamentów i ciężkiego gradientu.
 
 HUD ma być spokojny i czytelny, nie dominować stołu.
 
@@ -40,7 +47,7 @@ HUD ma być spokojny i czytelny, nie dominować stołu.
 `GameHud.update_from_run_manager(run_manager)` sam wykrywa zmiany wartości:
 
 - zmiana Money: pulse + zielony/czerwony flash wartości,
-- zmiana Debt: subtelny pulse,
+- zmiana Debt: subtelny pulse paska,
 - zmiana Hands Left: pulse,
 - wzrost Combo: mocniejszy pulse,
 - reset/spadek Combo: shake.

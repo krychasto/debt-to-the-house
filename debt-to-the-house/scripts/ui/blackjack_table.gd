@@ -284,31 +284,15 @@ func _build_hand_panel(title: String, is_dealer: bool) -> Control:
 	name_label.add_theme_constant_override("outline_size", 5)
 	top_row.add_child(name_label)
 
-	var score_badge := PanelContainer.new()
-	score_badge.custom_minimum_size = Vector2(128, 58)
-	score_badge.rotation_degrees = -1.2 if is_dealer else 1.2
-	score_badge.add_theme_stylebox_override("panel", _make_style(Color(0.03, 0.00, 0.05, 0.58), GOLD if not is_dealer else CYAN, 1, 8))
-	top_row.add_child(score_badge)
-
-	var score_box := VBoxContainer.new()
-	score_box.alignment = BoxContainer.ALIGNMENT_CENTER
-	score_box.add_theme_constant_override("separation", -2)
-	score_badge.add_child(score_box)
-
-	var score_caption := Label.new()
-	score_caption.text = "PUNKTY"
-	score_caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	score_caption.add_theme_font_size_override("font_size", 10)
-	score_caption.add_theme_color_override("font_color", CYAN if is_dealer else GOLD)
-	score_box.add_child(score_caption)
-
 	var score_label := Label.new()
-	score_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	score_label.add_theme_font_size_override("font_size", 38)
+	score_label.custom_minimum_size = Vector2(92, 42)
+	score_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	score_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	score_label.add_theme_font_size_override("font_size", 40)
 	score_label.add_theme_color_override("font_color", Color(1.0, 0.97, 0.84))
 	score_label.add_theme_color_override("font_outline_color", Color(0.03, 0.00, 0.05, 0.95))
 	score_label.add_theme_constant_override("outline_size", 7)
-	score_box.add_child(score_label)
+	top_row.add_child(score_label)
 
 	var cards_row := HBoxContainer.new()
 	cards_row.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -764,16 +748,20 @@ func _build_controls() -> Control:
 	controls.add_child(action_controls)
 
 	deal_button = _create_action_button("ROZDAJ", GOLD, Color(0.20, 0.07, 0.12))
+	deal_button.custom_minimum_size = Vector2(148, 48)
+	deal_button.add_theme_font_size_override("font_size", 18)
 	deal_button.rotation_degrees = -1.0
 	deal_button.pressed.connect(_on_deal_pressed)
 	action_controls.add_child(deal_button)
 
 	hit_button = _create_action_button("DOBIERZ", CYAN, Color(0.03, 0.12, 0.14))
+	hit_button.custom_minimum_size = Vector2(104, 40)
 	hit_button.rotation_degrees = 0.6
 	hit_button.pressed.connect(_on_hit_pressed)
 	action_controls.add_child(hit_button)
 
 	stand_button = _create_action_button("STÓJ", PINK, Color(0.16, 0.04, 0.13))
+	stand_button.custom_minimum_size = Vector2(104, 40)
 	stand_button.rotation_degrees = -0.6
 	stand_button.pressed.connect(_on_stand_pressed)
 	action_controls.add_child(stand_button)
@@ -1328,19 +1316,14 @@ func _apply_round_result(result: String) -> void:
 	var combo_before := run_manager.combo_count
 	var payout := run_manager.apply_result(result, engine.current_bet, engine.rules)
 	var money_delta := run_manager.money - money_before_payout
-	message_label.text = "%s Wypłata: $%d. Kasa: $%d -> $%d." % [
-		_get_result_text(result),
-		payout,
-		money_before_payout,
-		run_manager.money,
-	]
+	message_label.text = "Następne rozdanie."
 
 	var stage_cleared := run_manager.is_stage_success()
 	var game_lost := run_manager.is_game_over()
 	if stage_cleared:
-		message_label.text = "DŁUG SPŁACONY"
+		message_label.text = "Wybierz relikt."
 	elif game_lost:
-		message_label.text = "KASYNO WYGRYWA"
+		message_label.text = "Run zakończony."
 
 	_spawn_money_popup(money_delta)
 	_play_combo_feedback(combo_before)
