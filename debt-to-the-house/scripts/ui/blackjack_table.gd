@@ -563,12 +563,12 @@ func _build_synergy_panel() -> Control:
 	synergy_panel.visible = false
 	synergy_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	synergy_panel.z_index = 20
-	synergy_panel.anchor_left = 1.0
-	synergy_panel.anchor_right = 1.0
-	synergy_panel.anchor_top = 0.79
-	synergy_panel.anchor_bottom = 0.79
-	synergy_panel.offset_left = -232.0
-	synergy_panel.offset_right = -78.0
+	synergy_panel.anchor_left = 0.0
+	synergy_panel.anchor_right = 0.0
+	synergy_panel.anchor_top = 0.87
+	synergy_panel.anchor_bottom = 0.87
+	synergy_panel.offset_left = 34.0
+	synergy_panel.offset_right = 188.0
 	synergy_panel.offset_top = 0.0
 	synergy_panel.offset_bottom = 92.0
 	synergy_panel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
@@ -1365,7 +1365,7 @@ func _play_new_synergy_feedback() -> void:
 
 	for synergy: SynergyData in run_manager.newly_discovered_synergies:
 		var title := "SYNERGIA: %s" % synergy.display_name
-		var popup_position := Vector2(size.x - 165.0, size.y * 0.79)
+		var popup_position := Vector2(136.0, size.y * 0.86)
 		JuiceManager.play_combo_popup(self, title, popup_position)
 		if is_instance_valid(synergy_panel):
 			JuiceManager.pulse_label(synergy_panel, 1.08, 0.20)

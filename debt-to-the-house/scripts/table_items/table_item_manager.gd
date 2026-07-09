@@ -89,16 +89,16 @@ func get_item_data_for_relic(relic: RelicData) -> Dictionary:
 
 func _build_slots() -> void:
 	_slots = [
-		TableItemSlot.new(TableItemSlot.PLAYER_ITEM_RACK, Vector2(0.835, 0.435)),
-		TableItemSlot.new(TableItemSlot.PLAYER_ITEM_RACK, Vector2(0.895, 0.435)),
-		TableItemSlot.new(TableItemSlot.PLAYER_ITEM_RACK, Vector2(0.835, 0.525)),
-		TableItemSlot.new(TableItemSlot.PLAYER_ITEM_RACK, Vector2(0.895, 0.525)),
-		TableItemSlot.new(TableItemSlot.PLAYER_ITEM_RACK, Vector2(0.835, 0.615)),
-		TableItemSlot.new(TableItemSlot.PLAYER_ITEM_RACK, Vector2(0.895, 0.615)),
-		TableItemSlot.new(TableItemSlot.PLAYER_ITEM_RACK, Vector2(0.835, 0.705)),
-		TableItemSlot.new(TableItemSlot.PLAYER_ITEM_RACK, Vector2(0.895, 0.705)),
-		TableItemSlot.new(TableItemSlot.PLAYER_ITEM_RACK, Vector2(0.835, 0.785)),
-		TableItemSlot.new(TableItemSlot.PLAYER_ITEM_RACK, Vector2(0.895, 0.785)),
+		TableItemSlot.new(TableItemSlot.PLAYER_ITEM_RACK, Vector2(0.085, 0.535)),
+		TableItemSlot.new(TableItemSlot.PLAYER_ITEM_RACK, Vector2(0.145, 0.535)),
+		TableItemSlot.new(TableItemSlot.PLAYER_ITEM_RACK, Vector2(0.085, 0.625)),
+		TableItemSlot.new(TableItemSlot.PLAYER_ITEM_RACK, Vector2(0.145, 0.625)),
+		TableItemSlot.new(TableItemSlot.PLAYER_ITEM_RACK, Vector2(0.085, 0.715)),
+		TableItemSlot.new(TableItemSlot.PLAYER_ITEM_RACK, Vector2(0.145, 0.715)),
+		TableItemSlot.new(TableItemSlot.PLAYER_ITEM_RACK, Vector2(0.085, 0.805)),
+		TableItemSlot.new(TableItemSlot.PLAYER_ITEM_RACK, Vector2(0.145, 0.805)),
+		TableItemSlot.new(TableItemSlot.PLAYER_ITEM_RACK, Vector2(0.085, 0.875)),
+		TableItemSlot.new(TableItemSlot.PLAYER_ITEM_RACK, Vector2(0.145, 0.875)),
 		TableItemSlot.new(TableItemSlot.LEFT_PANEL, Vector2(0.14, 0.31)),
 		TableItemSlot.new(TableItemSlot.LEFT_PANEL, Vector2(0.14, 0.55)),
 		TableItemSlot.new(TableItemSlot.RIGHT_PANEL, Vector2(0.86, 0.31)),
@@ -118,12 +118,12 @@ func _build_rack() -> void:
 	_rack_panel = PanelContainer.new()
 	_rack_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_rack_panel.z_index = 4
-	_rack_panel.anchor_left = 1.0
-	_rack_panel.anchor_right = 1.0
-	_rack_panel.anchor_top = 0.34
-	_rack_panel.anchor_bottom = 0.78
-	_rack_panel.offset_left = -232.0
-	_rack_panel.offset_right = -78.0
+	_rack_panel.anchor_left = 0.0
+	_rack_panel.anchor_right = 0.0
+	_rack_panel.anchor_top = 0.50
+	_rack_panel.anchor_bottom = 0.86
+	_rack_panel.offset_left = 34.0
+	_rack_panel.offset_right = 188.0
 	_rack_panel.offset_top = 0.0
 	_rack_panel.offset_bottom = 0.0
 	_rack_panel.add_theme_stylebox_override("panel", _make_rack_style())
@@ -209,7 +209,7 @@ func _get_rack_grid_origin() -> Vector2:
 	if bounds.x <= 0.0 or bounds.y <= 0.0:
 		bounds = Vector2(1280, 720)
 
-	return Vector2(bounds.x - 195.0, bounds.y * 0.435)
+	return Vector2(74.0, bounds.y * 0.535)
 
 
 func _build_tooltip() -> void:
@@ -268,7 +268,7 @@ func _get_rack_tooltip_position(tooltip_size: Vector2) -> Vector2:
 	if bounds.x <= 0.0 or bounds.y <= 0.0:
 		bounds = Vector2(1280, 720)
 
-	return Vector2(bounds.x - tooltip_size.x - 252.0, bounds.y * 0.43)
+	return Vector2(206.0, bounds.y * 0.54)
 
 
 func _hide_tooltip() -> void:
