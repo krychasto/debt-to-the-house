@@ -9,6 +9,7 @@ const PLAYER_AREA := "player_area"
 const DEALER_AREA := "dealer_area"
 const CENTER_LEFT := "center_left"
 const CENTER_RIGHT := "center_right"
+const PLAYER_ITEM_RACK := "player_item_rack"
 
 var slot_type: String
 var normalized_position: Vector2

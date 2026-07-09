@@ -32,8 +32,24 @@ Aktualne typy slotów:
 - `DEALER_AREA`
 - `CENTER_LEFT`
 - `CENTER_RIGHT`
+- `PLAYER_ITEM_RACK`
 
-Każdy item ma preferowany `slot_type`. Jeśli wszystkie sloty tego typu są zajęte, `TableItemManager` szuka najbliższego wolnego slotu względem preferowanej pozycji. Jeśli cały stół jest pełny, spawn jest pomijany bez crasha.
+Stare sloty stołu zostają w kodzie jako przyszłe miejsca dla bossów, wydarzeń albo specjalnych reliktów. Domyślnie zdobyte relikty gracza trafiają jednak zawsze do `PLAYER_ITEM_RACK`.
+
+## PLAYER_ITEM_RACK
+
+`PLAYER_ITEM_RACK` to stała strefa itemów gracza po prawej stronie stołu. Ma subtelny nagłówek `RELIKWIE`, lekką cyan/fioletową ramkę i nie powinna zasłaniać kart, punktów ani panelu zakładu.
+
+Rack układa itemy w siatkę:
+
+- 2 kolumny,
+- do 4 rzędów w normalnym rozmiarze,
+- stały odstęp między itemami,
+- kolejność zgodna z kolejnością zdobywania reliktów.
+
+Jeśli itemów jest więcej niż 8, manager lekko zmniejsza skalę i zagęszcza odstępy. To jest tymczasowy fallback bez crasha; docelowo można dodać stronicowanie albo drugi rack.
+
+Nie rozrzucamy itemów losowo po stole. Stół ma pokazywać, że są to rzeczy gracza, a nie przypadkowe dekoracje.
 
 ## Lifecycle
 
@@ -41,7 +57,7 @@ Każdy item ma preferowany `slot_type`. Jeśli wszystkie sloty tego typu są zaj
 2. `RunManager.add_relic(relic, rules)` zapisuje relikt i aplikuje mechanikę tak jak wcześniej.
 3. Główna scena wywołuje `table_item_manager.spawn_for_relic(relic)`.
 4. Manager wybiera definicję itemu dla `relic.id`.
-5. Manager znajduje wolny slot.
+5. Manager znajduje kolejny wolny slot w `PLAYER_ITEM_RACK`.
 6. Powstaje `TableItem`.
 7. Item odpala animację pojawienia i idle animation.
 8. Kliknięcie lub hover pokazuje tooltip.
@@ -88,6 +104,20 @@ Po kliknięciu lub najechaniu na item tooltip pokazuje:
 - efekt z `RelicData.description`.
 
 Tooltip jest prezentacyjny i nie wpływa na mechanikę.
+
+Tooltip pojawia się obok racka, nie na środku stołu. Ma nie zasłaniać kart ani głównej akcji.
+
+## Synergie przy itemach
+
+Aktywne synergie są pokazywane jako mały panel przy racku, a nie jako duży pasek nad stołem. Panel pokazuje maksymalnie 3 wpisy:
+
+- symbol,
+- nazwę,
+- poziom.
+
+Jeśli synergii jest więcej, reszta jest zwijana jako `+N`. Gdy nie ma aktywnych synergii, panel jest ukryty.
+
+Nowo odkryta synergia pokazuje krótki popup przy racku, np. `SYNERGIA: Przepływ Kasy`, po czym znika. Stały stan zostaje tylko w małym panelu.
 
 ## Jak dodać nowy item
 

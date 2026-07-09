@@ -623,48 +623,30 @@ func _build_synergy_panel() -> Control:
 	synergy_panel.visible = false
 	synergy_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	synergy_panel.z_index = 20
-	synergy_panel.anchor_left = 0.5
-	synergy_panel.anchor_right = 0.5
-	synergy_panel.anchor_top = 0.0
-	synergy_panel.anchor_bottom = 0.0
-	synergy_panel.offset_left = -280.0
-	synergy_panel.offset_right = 280.0
-	synergy_panel.offset_top = 84.0
-	synergy_panel.offset_bottom = 152.0
+	synergy_panel.anchor_left = 1.0
+	synergy_panel.anchor_right = 1.0
+	synergy_panel.anchor_top = 0.79
+	synergy_panel.anchor_bottom = 0.79
+	synergy_panel.offset_left = -232.0
+	synergy_panel.offset_right = -78.0
+	synergy_panel.offset_top = 0.0
+	synergy_panel.offset_bottom = 92.0
 	synergy_panel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	synergy_panel.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	synergy_panel.custom_minimum_size = Vector2(560, 68)
-	synergy_panel.rotation_degrees = -0.25
-	synergy_panel.add_theme_stylebox_override("panel", _make_style(Color(0.03, 0.01, 0.05, 0.50), Color(1.0, 0.43, 0.95, 0.55), 1, 8))
+	synergy_panel.custom_minimum_size = Vector2(154, 82)
+	synergy_panel.rotation_degrees = 0.0
+	synergy_panel.add_theme_stylebox_override("panel", _make_style(Color(0.03, 0.01, 0.05, 0.30), Color(1.0, 0.43, 0.95, 0.36), 1, 6))
 
 	var box := VBoxContainer.new()
 	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	box.add_theme_constant_override("separation", 3)
+	box.add_theme_constant_override("separation", 2)
 	synergy_panel.add_child(box)
-
-	var title := Label.new()
-	title.text = "AKTYWNE SYNERGIE"
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 11)
-	title.add_theme_color_override("font_color", Color(1.0, 0.76, 1.0))
-	title.add_theme_color_override("font_outline_color", INK)
-	title.add_theme_constant_override("outline_size", 3)
-	box.add_child(title)
-
-	var scroll := ScrollContainer.new()
-	scroll.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	scroll.custom_minimum_size = Vector2(520, 34)
-	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scroll.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
-	box.add_child(scroll)
 
 	synergy_list = VBoxContainer.new()
 	synergy_list.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	synergy_list.add_theme_constant_override("separation", 2)
+	synergy_list.add_theme_constant_override("separation", 1)
 	synergy_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scroll.add_child(synergy_list)
+	box.add_child(synergy_list)
 
 	return synergy_panel
 
@@ -1443,14 +1425,12 @@ func _play_new_synergy_feedback() -> void:
 		return
 
 	for synergy: SynergyData in run_manager.newly_discovered_synergies:
-		var title := "SYNERGIA ODKRYTA: %s" % synergy.display_name.to_upper()
-		reward_message_label.text = title
-		reward_message_label.visible = true
-		JuiceManager.show_result_banner(result_burst_label, title, Color(1.0, 0.43, 0.95), 0.86)
-		JuiceManager.play_combo_popup(self, synergy.description, reward_message_label.get_global_rect().get_center() + Vector2(0.0, 42.0))
-		JuiceManager.pulse_label(reward_message_label, 1.14, 0.24)
-		JuiceShake.shake_node(reward_message_label, 4.0, 0.18)
-		await get_tree().create_timer(0.72).timeout
+		var title := "SYNERGIA: %s" % synergy.display_name
+		var popup_position := Vector2(size.x - 165.0, size.y * 0.79)
+		JuiceManager.play_combo_popup(self, title, popup_position)
+		if is_instance_valid(synergy_panel):
+			JuiceManager.pulse_label(synergy_panel, 1.08, 0.20)
+		await get_tree().create_timer(0.86).timeout
 
 
 func _update_ui() -> void:
@@ -1545,15 +1525,43 @@ func _update_synergy_panel() -> void:
 	if run_manager.active_synergies.is_empty():
 		return
 
-	for synergy: SynergyData in run_manager.active_synergies:
+	var visible_count: int = mini(3, run_manager.active_synergies.size())
+	for index: int in range(visible_count):
+		var synergy: SynergyData = run_manager.active_synergies[index]
 		var label := Label.new()
-		label.text = "%s  POZ. %d" % [synergy.display_name.to_upper(), synergy.level]
-		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		label.add_theme_font_size_override("font_size", 13)
+		label.text = "%s %s  L%d" % [_get_synergy_symbol(synergy), synergy.display_name, synergy.level]
+		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		label.add_theme_font_size_override("font_size", 11)
 		label.add_theme_color_override("font_color", Color(1.0, 0.94, 0.78))
 		label.add_theme_color_override("font_outline_color", INK)
 		label.add_theme_constant_override("outline_size", 3)
 		synergy_list.add_child(label)
+
+	var hidden_count: int = run_manager.active_synergies.size() - visible_count
+	if hidden_count > 0:
+		var more_label := Label.new()
+		more_label.text = "+%d" % hidden_count
+		more_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		more_label.add_theme_font_size_override("font_size", 11)
+		more_label.add_theme_color_override("font_color", Color(0.72, 0.86, 1.0))
+		more_label.add_theme_color_override("font_outline_color", INK)
+		more_label.add_theme_constant_override("outline_size", 3)
+		synergy_list.add_child(more_label)
+
+
+func _get_synergy_symbol(synergy: SynergyData) -> String:
+	if synergy.tags.has("money"):
+		return "$"
+	if synergy.tags.has("ace"):
+		return "A"
+	if synergy.tags.has("blackjack"):
+		return "21"
+	if synergy.tags.has("risk"):
+		return "!"
+	if synergy.tags.has("dealer"):
+		return "D"
+
+	return "*"
 
 
 func _update_debug_panel() -> void:

@@ -17,6 +17,7 @@ var relic_id: String = ""
 
 var _visual_root: Control
 var _accent: Color = Color.WHITE
+var _base_scale := Vector2.ONE
 
 
 func setup(data: Dictionary, relic: RelicData) -> void:
@@ -49,13 +50,13 @@ func setup(data: Dictionary, relic: RelicData) -> void:
 
 
 func play_spawn_animation() -> void:
-	scale = Vector2(0.2, 0.2)
+	scale = _base_scale * 0.2
 	modulate = Color(1.0, 1.0, 1.0, 0.0)
 	pivot_offset = size * 0.5
 
 	var tween := create_tween()
 	tween.set_parallel(true)
-	tween.tween_property(self, "scale", Vector2.ONE, 0.24).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_property(self, "scale", _base_scale, 0.24).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	tween.tween_property(self, "modulate:a", 1.0, 0.14)
 	tween.chain().tween_callback(play_activation_animation)
 	tween.chain().tween_callback(play_idle_animation)
@@ -85,14 +86,19 @@ func play_activation_animation() -> void:
 			var tween := create_tween()
 			tween.set_parallel(true)
 			tween.tween_property(self, "rotation_degrees", rotation_degrees + 360.0, 0.34).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-			tween.tween_property(self, "scale", Vector2(1.14, 1.14), 0.10)
-			tween.chain().tween_property(self, "scale", Vector2.ONE, 0.12)
+			tween.tween_property(self, "scale", _base_scale * 1.14, 0.10)
+			tween.chain().tween_property(self, "scale", _base_scale, 0.12)
 		"flash":
 			_flash_accent()
 		_:
 			var tween := create_tween()
-			tween.tween_property(self, "scale", Vector2(1.16, 1.16), 0.10).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-			tween.tween_property(self, "scale", Vector2.ONE, 0.14).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+			tween.tween_property(self, "scale", _base_scale * 1.16, 0.10).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+			tween.tween_property(self, "scale", _base_scale, 0.14).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+
+
+func set_display_scale(value: float) -> void:
+	_base_scale = Vector2(value, value)
+	scale = _base_scale
 
 
 func _build_placeholder(data: Dictionary) -> void:
@@ -225,13 +231,13 @@ func _on_pressed() -> void:
 func _on_mouse_entered() -> void:
 	pivot_offset = size * 0.5
 	var tween := create_tween()
-	tween.tween_property(self, "scale", Vector2(1.08, 1.08), 0.10)
+	tween.tween_property(self, "scale", _base_scale * 1.08, 0.10)
 	tooltip_requested.emit(self)
 
 
 func _on_mouse_exited() -> void:
 	var tween := create_tween()
-	tween.tween_property(self, "scale", Vector2.ONE, 0.10)
+	tween.tween_property(self, "scale", _base_scale, 0.10)
 	tooltip_hidden.emit()
 
 
