@@ -391,7 +391,7 @@ func _build_reward_overlay() -> Control:
 
 func _create_reward_card(relic: RelicData, index: int) -> Button:
 	var card := Button.new()
-	card.custom_minimum_size = Vector2(250, 340)
+	card.custom_minimum_size = Vector2(250, _get_reward_card_height(relic))
 	card.disabled = true
 	card.focus_mode = Control.FOCUS_NONE
 	card.text = ""
@@ -449,8 +449,8 @@ func _create_relic_card_front(relic: RelicData) -> Control:
 	front.add_theme_constant_override("margin_bottom", 16)
 
 	var box := VBoxContainer.new()
-	box.alignment = BoxContainer.ALIGNMENT_CENTER
-	box.add_theme_constant_override("separation", 12)
+	box.alignment = BoxContainer.ALIGNMENT_BEGIN
+	box.add_theme_constant_override("separation", 10)
 	front.add_child(box)
 
 	var rarity := Label.new()
@@ -494,6 +494,16 @@ func _create_relic_card_front(relic: RelicData) -> Control:
 	box.add_child(tags_label)
 
 	return front
+
+
+func _get_reward_card_height(relic: RelicData) -> float:
+	var description_length := relic.description.length()
+	if description_length <= 90:
+		return 276.0
+	if description_length <= 135:
+		return 304.0
+
+	return 332.0
 
 
 func _format_relic_tags(tags: Array[String]) -> String:
