@@ -11,7 +11,6 @@ const CARD_HOVER_OFFSET := Vector2(0, -8)
 const CARD_ENTER_TIME := 0.18
 const CARD_HOVER_TIME := 0.10
 const CARD_TILT_RANGE := 2.5
-const RELIC_DRAWER_WIDTH := 286.0
 const CHIP_SIZE := Vector2(42, 42)
 const CHIP_RADIUS := 21.0
 const CHIP_COLLISION_RADIUS := 18.0
@@ -47,9 +46,6 @@ var deal_button: Button
 var hit_button: Button
 var stand_button: Button
 var retry_button: Button
-var relics_button: Button
-var relic_drawer_panel: PanelContainer
-var relic_drawer_list: VBoxContainer
 var reward_panel: PanelContainer
 var reward_overlay: Control
 var reward_cards_row: HBoxContainer
@@ -68,7 +64,6 @@ var reward_card_views: Array[Control] = []
 var current_reward_choices: Array[RelicData] = []
 var last_player_card_count: int = 0
 var last_dealer_card_count: int = 0
-var is_relic_drawer_pinned: bool = false
 var is_dealer_sequence_playing: bool = false
 var is_stage_clear_sequence_playing: bool = false
 var is_reward_screen_open: bool = false
@@ -170,7 +165,6 @@ func _build_ui() -> void:
 	_add_game_hud()
 	_add_table_item_manager()
 	add_child(_build_synergy_panel())
-	add_child(_build_relic_drawer())
 	add_child(_build_reward_overlay())
 	add_child(_build_debug_panel())
 
@@ -562,60 +556,6 @@ func _get_rarity_border_width(rarity: String) -> int:
 			return 3
 
 	return 1
-
-
-func _build_relic_drawer() -> Control:
-	var shell := Control.new()
-	shell.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	shell.set_anchors_preset(Control.PRESET_FULL_RECT)
-
-	relics_button = _create_small_button("<")
-	relics_button.tooltip_text = "Relikty"
-	relics_button.custom_minimum_size = Vector2(42, 96)
-	relics_button.anchor_left = 1.0
-	relics_button.anchor_right = 1.0
-	relics_button.anchor_top = 0.44
-	relics_button.anchor_bottom = 0.44
-	relics_button.offset_left = -42
-	relics_button.offset_right = 0
-	relics_button.offset_top = -48
-	relics_button.offset_bottom = 48
-	relics_button.pressed.connect(_on_relics_button_pressed)
-	relics_button.mouse_entered.connect(_show_relic_drawer)
-	relics_button.mouse_exited.connect(_on_relic_button_mouse_exited)
-	shell.add_child(relics_button)
-
-	relic_drawer_panel = PanelContainer.new()
-	relic_drawer_panel.visible = false
-	relic_drawer_panel.custom_minimum_size = Vector2(RELIC_DRAWER_WIDTH, 280)
-	relic_drawer_panel.anchor_left = 1.0
-	relic_drawer_panel.anchor_right = 1.0
-	relic_drawer_panel.anchor_top = 0.25
-	relic_drawer_panel.anchor_bottom = 0.75
-	relic_drawer_panel.offset_left = -RELIC_DRAWER_WIDTH - 44.0
-	relic_drawer_panel.offset_right = -46.0
-	relic_drawer_panel.offset_top = 0.0
-	relic_drawer_panel.offset_bottom = 0.0
-	relic_drawer_panel.add_theme_stylebox_override("panel", _make_style(Color(0.03, 0.01, 0.05, 0.78), Color(1.0, 1.0, 1.0, 0.0), 0, 8))
-	relic_drawer_panel.mouse_entered.connect(_show_relic_drawer)
-	relic_drawer_panel.mouse_exited.connect(_on_relic_drawer_mouse_exited)
-	shell.add_child(relic_drawer_panel)
-
-	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 6)
-	relic_drawer_panel.add_child(box)
-
-	var title := Label.new()
-	title.text = "Relikty"
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 16)
-	box.add_child(title)
-
-	relic_drawer_list = VBoxContainer.new()
-	relic_drawer_list.add_theme_constant_override("separation", 6)
-	box.add_child(relic_drawer_list)
-
-	return shell
 
 
 func _build_synergy_panel() -> Control:
@@ -1286,7 +1226,6 @@ func _on_retry_pressed() -> void:
 	_clear_bet_chips()
 	current_reward_choices.clear()
 	reward_card_views.clear()
-	is_relic_drawer_pinned = false
 	is_dealer_sequence_playing = false
 	is_stage_clear_sequence_playing = false
 	is_reward_screen_open = false
@@ -1466,9 +1405,7 @@ func _update_ui() -> void:
 	max_bet_button.disabled = engine.is_round_active or is_dealer_sequence_playing or game_over or stage_ready_to_advance
 	if is_instance_valid(reward_panel):
 		reward_panel.visible = false
-	relics_button.text = _get_relics_text()
 	_update_reward_buttons()
-	_update_relic_drawer()
 	_update_synergy_panel()
 	bet_input.editable = not engine.is_round_active and not is_dealer_sequence_playing
 	_update_debug_panel()
@@ -1492,28 +1429,6 @@ func _update_reward_buttons() -> void:
 
 		if has_choice:
 			button.text = current_reward_choices[index].get_reward_text()
-
-
-func _get_relics_text() -> String:
-	if run_manager.relics.is_empty():
-		return "< 0"
-
-	return "< %d" % run_manager.relics.size()
-
-
-func _update_relic_drawer() -> void:
-	_clear_children(relic_drawer_list)
-
-	if run_manager.relics.is_empty():
-		var empty_label := Label.new()
-		empty_label.text = "Brak reliktów."
-		empty_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		empty_label.add_theme_font_size_override("font_size", 13)
-		relic_drawer_list.add_child(empty_label)
-		return
-
-	for relic: RelicData in run_manager.relics:
-		relic_drawer_list.add_child(_create_owned_relic_view(relic))
 
 
 func _update_synergy_panel() -> void:
@@ -1600,65 +1515,6 @@ func _get_debug_synergy_text() -> String:
 		names.append("%s L%d" % [synergy.display_name, synergy.level])
 
 	return ", ".join(names)
-
-
-func _create_owned_relic_view(relic: RelicData) -> Control:
-	var panel := PanelContainer.new()
-	panel.add_theme_stylebox_override("panel", _make_style(Color(0.08, 0.03, 0.12, 0.68), Color(1.0, 1.0, 1.0, 0.0), 0, 8))
-
-	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 2)
-	panel.add_child(box)
-
-	var name_label := Label.new()
-	name_label.text = relic.display_name
-	name_label.add_theme_font_size_override("font_size", 14)
-	box.add_child(name_label)
-
-	var description_label := Label.new()
-	description_label.text = relic.description
-	description_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	description_label.add_theme_font_size_override("font_size", 12)
-	description_label.modulate = Color(0.90, 0.82, 0.66)
-	box.add_child(description_label)
-
-	return panel
-
-
-func _on_relics_button_pressed() -> void:
-	is_relic_drawer_pinned = not is_relic_drawer_pinned
-	relic_drawer_panel.visible = is_relic_drawer_pinned or not relic_drawer_panel.visible
-
-
-func _show_relic_drawer() -> void:
-	if relic_drawer_panel.visible:
-		return
-
-	relic_drawer_panel.visible = true
-	relic_drawer_panel.position.x = 18.0
-	relic_drawer_panel.modulate = Color(1.0, 1.0, 1.0, 0.0)
-	var tween := create_tween()
-	tween.set_parallel(true)
-	tween.tween_property(relic_drawer_panel, "position:x", 0.0, 0.14).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
-	tween.tween_property(relic_drawer_panel, "modulate:a", 1.0, 0.10)
-
-
-func _on_relic_button_mouse_exited() -> void:
-	call_deferred("_hide_relic_drawer_if_unhovered")
-
-
-func _on_relic_drawer_mouse_exited() -> void:
-	call_deferred("_hide_relic_drawer_if_unhovered")
-
-
-func _hide_relic_drawer_if_unhovered() -> void:
-	if is_relic_drawer_pinned:
-		return
-
-	var mouse_position := get_global_mouse_position()
-	var is_over_button := relics_button.get_global_rect().has_point(mouse_position)
-	var is_over_drawer := relic_drawer_panel.get_global_rect().has_point(mouse_position)
-	relic_drawer_panel.visible = is_over_button or is_over_drawer
 
 
 func _render_hand_cards(row: HBoxContainer, hand: Hand, hide_hole_card: bool, previous_card_count: int, animate_hole_reveal: bool = false) -> void:
