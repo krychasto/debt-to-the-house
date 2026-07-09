@@ -6,6 +6,7 @@ const TABLE_TEXTURE := preload("res://assets/ui/table_felt.png")
 const CARD_BACK_TEXTURE := preload("res://assets/ui/card_back.png")
 const CARD_FRONT_TEXTURE := preload("res://assets/ui/card_front.png")
 const GAME_HUD_SCENE := preload("res://scenes/ui/GameHud.tscn")
+const TABLE_ITEM_MANAGER_SCENE := preload("res://scenes/table_items/TableItemManager.tscn")
 const CARD_HOVER_OFFSET := Vector2(0, -8)
 const CARD_ENTER_TIME := 0.18
 const CARD_HOVER_TIME := 0.10
@@ -56,6 +57,7 @@ var reward_message_label: Label
 var table_area_root: VBoxContainer
 var background_shade: ColorRect
 var chip_layer: Control
+var table_item_manager: TableItemManager
 var flash_overlay: ColorRect
 var result_burst_label: Label
 var debug_panel: PanelContainer
@@ -166,6 +168,7 @@ func _build_ui() -> void:
 
 	root.add_child(_build_controls())
 	_add_game_hud()
+	_add_table_item_manager()
 	add_child(_build_synergy_panel())
 	add_child(_build_relic_drawer())
 	add_child(_build_reward_overlay())
@@ -225,6 +228,12 @@ func _add_game_hud() -> void:
 	hands_label = game_hud.hands_value_label
 	stage_label = game_hud.stage_value_label
 	combo_label = game_hud.combo_value_label
+
+
+func _add_table_item_manager() -> void:
+	table_item_manager = TABLE_ITEM_MANAGER_SCENE.instantiate() as TableItemManager
+	table_item_manager.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(table_item_manager)
 
 
 func _create_stat_card(caption: String, accent_color: Color, tilt: float) -> PanelContainer:
@@ -1266,6 +1275,8 @@ func _on_reward_card_pressed(card: Button) -> void:
 
 func _complete_reward_choice(relic: RelicData) -> void:
 	print("[Debug] reward selected id=%s name=%s stage_before=%d" % [relic.id, relic.display_name, run_manager.stage])
+	if is_instance_valid(table_item_manager):
+		table_item_manager.spawn_for_relic(relic)
 	run_manager.advance_stage()
 	run_manager.rebuild_effective_state(engine.rules)
 	engine.reset_round()
@@ -1303,6 +1314,8 @@ func _on_retry_pressed() -> void:
 		reward_overlay.visible = false
 	if is_instance_valid(background_shade):
 		background_shade.color = Color(0.04, 0.00, 0.07, 0.08)
+	if is_instance_valid(table_item_manager):
+		table_item_manager.clear_items()
 	message_label.text = "Nowy run. Ustaw stawkę i rozdaj."
 	_update_ui()
 
