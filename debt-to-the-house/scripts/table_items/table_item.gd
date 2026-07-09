@@ -17,6 +17,7 @@ var relic_id: String = ""
 
 var _visual_root: Control
 var _accent: Color = Color.WHITE
+var _item_tint: Color = Color.WHITE
 var _base_scale := Vector2.ONE
 
 
@@ -31,7 +32,8 @@ func setup(data: Dictionary, relic: RelicData) -> void:
 	activation_animation = String(data.get("activation_animation", "pop"))
 	rarity = String(data.get("rarity", relic.rarity if relic != null else RelicData.RARITY_COMMON))
 	relic_id = relic.id if relic != null else ""
-	_accent = data.get("accent", _get_rarity_color(rarity))
+	_accent = _get_rarity_color(rarity)
+	_item_tint = data.get("accent", _accent)
 
 	text = ""
 	tooltip_text = ""
@@ -112,27 +114,28 @@ func _build_placeholder(data: Dictionary) -> void:
 		"coin":
 			_add_circle(Vector2(33, 33), 23.0, _accent, "$")
 		"flask":
-			_add_box(Vector2(18, 10), Vector2(30, 48), _accent, "♜")
+			_add_box(Vector2(18, 10), Vector2(30, 48), _accent, "♜", _item_tint)
 		"dice":
-			_add_box(Vector2(10, 18), Vector2(25, 25), _accent, "⚂")
-			_add_box(Vector2(32, 24), Vector2(25, 25), _accent.lightened(0.15), "⚄")
+			_add_box(Vector2(10, 18), Vector2(25, 25), _accent, "⚂", _item_tint)
+			_add_box(Vector2(32, 24), Vector2(25, 25), _accent, "⚄", _item_tint.lightened(0.12))
 		"eye":
-			_add_box(Vector2(8, 21), Vector2(50, 24), _accent, "◉")
+			_add_box(Vector2(8, 21), Vector2(50, 24), _accent, "◉", _item_tint)
 		"clock":
 			_add_circle(Vector2(33, 33), 24.0, _accent, "◷")
 		"projector":
-			_add_box(Vector2(13, 36), Vector2(40, 22), _accent, "▱")
+			_add_box(Vector2(13, 36), Vector2(40, 22), _accent, "▱", _item_tint)
 			_add_hologram()
 		_:
 			_add_box(Vector2(14, 8), Vector2(38, 52), _accent, "A")
 
 
-func _add_box(position: Vector2, size_value: Vector2, color: Color, label_text: String) -> void:
+func _add_box(position: Vector2, size_value: Vector2, color: Color, label_text: String, fill_color: Color = Color.TRANSPARENT) -> void:
+	var fill := fill_color if fill_color != Color.TRANSPARENT else color
 	var panel := PanelContainer.new()
 	panel.position = position
 	panel.custom_minimum_size = size_value
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	panel.add_theme_stylebox_override("panel", _make_style(Color(color.r * 0.18, color.g * 0.18, color.b * 0.18, 0.84), color, 2, 6))
+	panel.add_theme_stylebox_override("panel", _make_style(Color(fill.r * 0.16, fill.g * 0.16, fill.b * 0.16, 0.84), color, 2, 6))
 	_visual_root.add_child(panel)
 
 	var label := Label.new()
@@ -151,7 +154,7 @@ func _add_circle(center: Vector2, radius: float, color: Color, label_text: Strin
 	panel.position = center - Vector2(radius, radius)
 	panel.custom_minimum_size = Vector2(radius * 2.0, radius * 2.0)
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	panel.add_theme_stylebox_override("panel", _make_style(Color(color.r * 0.20, color.g * 0.20, color.b * 0.20, 0.90), color, 2, int(radius)))
+	panel.add_theme_stylebox_override("panel", _make_style(Color(_item_tint.r * 0.18, _item_tint.g * 0.18, _item_tint.b * 0.18, 0.90), color, 2, int(radius)))
 	_visual_root.add_child(panel)
 
 	var label := Label.new()
@@ -169,7 +172,7 @@ func _add_hologram() -> void:
 	var glow := ColorRect.new()
 	glow.position = Vector2(23, 9)
 	glow.custom_minimum_size = Vector2(20, 28)
-	glow.color = Color(0.18, 0.94, 0.88, 0.36)
+	glow.color = Color(_accent.r, _accent.g, _accent.b, 0.36)
 	glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_visual_root.add_child(glow)
 

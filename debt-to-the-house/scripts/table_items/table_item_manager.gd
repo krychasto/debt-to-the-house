@@ -246,6 +246,7 @@ func _show_tooltip(item: TableItem) -> void:
 
 	_tooltip_name.text = item.display_name
 	_tooltip_rarity.text = item.rarity.to_upper()
+	_tooltip_rarity.add_theme_color_override("font_color", _get_rarity_color(item.rarity))
 	_tooltip_description.text = item.description
 	_tooltip_effect.text = item.effect_text
 	_tooltip_panel.visible = true
@@ -324,6 +325,20 @@ func _make_rack_style() -> StyleBoxFlat:
 	style.shadow_color = Color(0.74, 0.34, 1.0, 0.08)
 	style.shadow_size = 10
 	return style
+
+
+func _get_rarity_color(rarity: String) -> Color:
+	match rarity:
+		RelicData.RARITY_UNCOMMON:
+			return Color(0.34, 1.0, 0.60)
+		RelicData.RARITY_RARE:
+			return Color(0.18, 0.64, 1.0)
+		RelicData.RARITY_EPIC:
+			return Color(0.78, 0.36, 1.0)
+		RelicData.RARITY_LEGENDARY:
+			return Color(1.0, 0.78, 0.16)
+		_:
+			return Color(0.82, 0.86, 0.90)
 
 
 func _get_relic_item_map() -> Dictionary:
