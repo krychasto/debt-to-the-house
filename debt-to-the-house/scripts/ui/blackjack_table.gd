@@ -5,6 +5,7 @@ const CARD_SIZE := Vector2(92, 126)
 const TABLE_TEXTURE := preload("res://assets/ui/table_felt.png")
 const CARD_BACK_TEXTURE := preload("res://assets/ui/card_back.png")
 const CARD_FRONT_TEXTURE := preload("res://assets/ui/card_front.png")
+const GAME_HUD_SCENE := preload("res://scenes/ui/GameHud.tscn")
 const CARD_HOVER_OFFSET := Vector2(0, -8)
 const CARD_ENTER_TIME := 0.18
 const CARD_HOVER_TIME := 0.10
@@ -29,6 +30,7 @@ var money_label: Label
 var hands_label: Label
 var debt_label: Label
 var combo_label: Label
+var game_hud: GameHud
 var dealer_score_label: Label
 var player_score_label: Label
 var synergy_panel: PanelContainer
@@ -103,7 +105,7 @@ func _build_ui() -> void:
 	var margin := MarginContainer.new()
 	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
 	margin.add_theme_constant_override("margin_left", 22)
-	margin.add_theme_constant_override("margin_top", 16)
+	margin.add_theme_constant_override("margin_top", 84)
 	margin.add_theme_constant_override("margin_right", 58)
 	margin.add_theme_constant_override("margin_bottom", 14)
 	add_child(margin)
@@ -131,8 +133,6 @@ func _build_ui() -> void:
 	root.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	root.add_theme_constant_override("separation", 6)
 	margin.add_child(root)
-
-	root.add_child(_build_header())
 
 	table_area_root = VBoxContainer.new()
 	table_area_root.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -166,6 +166,7 @@ func _build_ui() -> void:
 
 	root.add_child(_build_synergy_panel())
 	root.add_child(_build_controls())
+	_add_game_hud()
 	add_child(_build_relic_drawer())
 	add_child(_build_reward_overlay())
 	add_child(_build_debug_panel())
@@ -212,6 +213,18 @@ func _build_header() -> Control:
 	header.add_child(combo_card)
 
 	return header
+
+
+func _add_game_hud() -> void:
+	game_hud = GAME_HUD_SCENE.instantiate() as GameHud
+	game_hud.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(game_hud)
+
+	money_label = game_hud.money_value_label
+	debt_label = game_hud.debt_value_label
+	hands_label = game_hud.hands_value_label
+	stage_label = game_hud.stage_value_label
+	combo_label = game_hud.combo_value_label
 
 
 func _create_stat_card(caption: String, accent_color: Color, tilt: float) -> PanelContainer:
@@ -1435,11 +1448,8 @@ func _update_ui() -> void:
 	var player_value := engine.player_hand.get_value(engine.rules) if not engine.player_hand.cards.is_empty() else 0
 	var dealer_value := engine.dealer_hand.get_value(engine.rules) if not engine.dealer_hand.cards.is_empty() else 0
 
-	stage_label.text = "Etap %d | Żetony %d" % [run_manager.stage, run_manager.tokens]
-	money_label.text = "$%d" % run_manager.money
-	hands_label.text = "%d" % run_manager.hands_left
-	debt_label.text = "$%d" % run_manager.debt_target
-	combo_label.text = run_manager.get_combo_display_text()
+	if is_instance_valid(game_hud):
+		game_hud.update_from_run_manager(run_manager)
 
 	player_score_label.text = "%d" % player_value if player_value > 0 else "-"
 	dealer_score_label.text = _get_dealer_score_text(dealer_value)
