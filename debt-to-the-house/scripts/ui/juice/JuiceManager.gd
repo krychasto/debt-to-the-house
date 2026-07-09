@@ -101,7 +101,7 @@ static func play_relic_selected(root: Control, selected: Control, dismissed: Arr
 		tween.tween_property(node, "scale", Vector2(0.88, 0.88), 0.20)
 
 	if is_instance_valid(message_label):
-		message_label.text = "RELIKT ZDOBYTY"
+		message_label.text = "RELIC ACQUIRED"
 		message_label.visible = true
 		pulse_label(message_label, 1.16, 0.22)
 
@@ -148,7 +148,7 @@ static func play_blackjack(root: Control, banner: Label, money_label: Control, d
 static func play_round_win(root: Control, banner: Label, money_label: Control, flash_overlay: ColorRect, payout: int) -> void:
 	flash_overlay.modulate = Color(0.16, 0.94, 0.84, 0.22)
 	JuiceTweenFactory.fade_to(flash_overlay, 0.0, 0.30)
-	show_result_banner(banner, "WYGRANA +$%d" % payout, Color(0.20, 1.0, 0.84), 1.0)
+	show_result_banner(banner, "WIN +$%d" % payout, Color(0.20, 1.0, 0.84), 1.0)
 	pulse_label(money_label, 1.12, 0.18)
 	JuiceParticleSpawner.spawn_burst(root, banner.get_global_rect().get_center(), Color(0.20, 1.0, 0.84, 0.78), 12, 56.0)
 
@@ -156,7 +156,7 @@ static func play_round_win(root: Control, banner: Label, money_label: Control, f
 static func play_round_push(banner: Label, flash_overlay: ColorRect) -> void:
 	flash_overlay.modulate = Color(0.70, 0.82, 1.0, 0.16)
 	JuiceTweenFactory.fade_to(flash_overlay, 0.0, 0.30)
-	show_result_banner(banner, "REMIS", Color(0.72, 0.86, 1.0), 0.92)
+	show_result_banner(banner, "PUSH", Color(0.72, 0.86, 1.0), 0.92)
 
 
 static func play_round_loss(banner: Label, message_label: Control, flash_overlay: ColorRect, text: String) -> void:
@@ -171,14 +171,14 @@ static func play_stage_success(root: Control, banner: Label, money_label: Contro
 	pulse_label(debt_label, 1.24, 0.28)
 	flash_overlay.modulate = Color(1.0, 0.82, 0.18, 0.30)
 	JuiceTweenFactory.fade_to(flash_overlay, 0.0, 0.34)
-	show_result_banner(banner, "DŁUG SPŁACONY", Color(1.0, 0.78, 0.16), 1.18)
+	show_result_banner(banner, "DEBT PAID", Color(1.0, 0.78, 0.16), 1.18)
 	JuiceParticleSpawner.spawn_burst(root, banner.get_global_rect().get_center(), Color(1.0, 0.82, 0.18, 0.86), 22, 86.0)
 
 
 static func play_failure(root: Control, table_root: Control, banner: Label, message_label: Control, shade: ColorRect) -> void:
 	JuiceShake.screen_shake(table_root, 11.0, 0.28)
 	JuiceShake.shake_node(message_label, 9.0, 0.25)
-	show_result_banner(banner, "KASYNO WYGRYWA", Color(1.0, 0.18, 0.55), 1.04)
+	show_result_banner(banner, "HOUSE WINS", Color(1.0, 0.18, 0.55), 1.04)
 	if is_instance_valid(shade):
 		shade.color = Color(0.02, 0.00, 0.03, 0.34)
 	JuiceParticleSpawner.spawn_burst(root, banner.get_global_rect().get_center(), Color(1.0, 0.18, 0.36, 0.60), 10, 52.0)

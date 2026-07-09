@@ -236,12 +236,12 @@ func _add_gameplay_layer() -> void:
 	add_child(status_label)
 
 	var dealer_title := _create_table_label(Vector3(-2.70, 0.20, -1.98), 21)
-	dealer_title.text = "KRUPIER"
+	dealer_title.text = "DEALER"
 	dealer_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	add_child(dealer_title)
 
 	var player_title := _create_table_label(Vector3(-2.70, 0.20, 1.58), 21)
-	player_title.text = "GRACZ"
+	player_title.text = "PLAYER"
 	player_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	add_child(player_title)
 
@@ -254,7 +254,7 @@ func _add_gameplay_layer() -> void:
 	add_child(player_score_label)
 
 	message_label = _create_table_label(Vector3(0.0, 0.20, -0.08), 20)
-	message_label.text = "Ustaw stawkę i rozdaj."
+	message_label.text = "Set your bet and deal."
 	add_child(message_label)
 
 	dealer_cards_root = Node3D.new()
@@ -268,10 +268,10 @@ func _add_gameplay_layer() -> void:
 	_add_button("bet_down", "-5", Vector3(-2.65, 0.20, 2.88), Vector2(0.55, 0.34))
 	_add_button("bet_up", "+5", Vector3(-1.98, 0.20, 2.88), Vector2(0.55, 0.34))
 	_add_button("max_bet", "MAX", Vector3(-1.22, 0.20, 2.88), Vector2(0.70, 0.34))
-	_add_button("deal", "ROZDAJ", Vector3(-0.22, 0.20, 2.88), Vector2(0.90, 0.38))
-	_add_button("hit", "DOBIERZ", Vector3(0.86, 0.20, 2.88), Vector2(0.98, 0.38))
-	_add_button("stand", "STÓJ", Vector3(1.96, 0.20, 2.88), Vector2(0.84, 0.38))
-	_add_button("retry", "OD NOWA", Vector3(3.02, 0.20, 2.88), Vector2(0.98, 0.38))
+	_add_button("deal", "DEAL", Vector3(-0.22, 0.20, 2.88), Vector2(0.90, 0.38))
+	_add_button("hit", "HIT", Vector3(0.86, 0.20, 2.88), Vector2(0.98, 0.38))
+	_add_button("stand", "STAND", Vector3(1.96, 0.20, 2.88), Vector2(0.84, 0.38))
+	_add_button("retry", "RETRY", Vector3(3.02, 0.20, 2.88), Vector2(0.98, 0.38))
 
 
 func _add_button(action: String, text: String, position: Vector3, size: Vector2) -> void:
@@ -342,11 +342,11 @@ func _handle_action(action: String) -> void:
 
 func _start_hand() -> void:
 	if not run_manager.start_hand(bet):
-		message_label.text = "Nie możesz zagrać z taką stawką."
+		message_label.text = "You cannot play with that bet."
 		return
 
 	engine.start_round(bet)
-	message_label.text = "Twój ruch."
+	message_label.text = "Your move."
 
 	var opening_result := engine.resolve_round() if _has_opening_blackjack() else ""
 	if opening_result != "":
@@ -358,7 +358,7 @@ func _hit() -> void:
 	if result != "":
 		_apply_round_result(result)
 	else:
-		message_label.text = "Karta dobrana."
+		message_label.text = "Card drawn."
 
 
 func _stand() -> void:
@@ -371,7 +371,7 @@ func _retry() -> void:
 	run_manager.reset_run()
 	engine = BlackjackEngine.new()
 	bet = DEFAULT_BET
-	message_label.text = "Nowy run."
+	message_label.text = "New run."
 
 
 func _has_opening_blackjack() -> bool:
@@ -386,13 +386,13 @@ func _apply_round_result(result: String) -> void:
 		message_label.text += " (+$%d)" % payout
 
 	if run_manager.is_stage_success():
-		message_label.text += " DŁUG SPŁACONY."
+		message_label.text += " DEBT PAID."
 	elif run_manager.is_game_over():
-		message_label.text += " KASYNO WYGRYWA."
+		message_label.text += " HOUSE WINS."
 
 
 func _update_view() -> void:
-	status_label.text = "Debt to the House\nEtap %d | Kasa $%d | Stawka $%d\nDług $%d | Rozdania %d | Combo %s" % [
+	status_label.text = "Debt to the House\nStage %d | Money $%d | Bet $%d\nDebt $%d | Hands %d | Combo %s" % [
 		run_manager.stage,
 		run_manager.money,
 		bet,
@@ -403,8 +403,8 @@ func _update_view() -> void:
 
 	var player_value := engine.player_hand.get_value(engine.rules) if not engine.player_hand.cards.is_empty() else 0
 	var dealer_value := engine.dealer_hand.get_value(engine.rules) if not engine.dealer_hand.cards.is_empty() else 0
-	player_score_label.text = "PUNKTY %d" % player_value if player_value > 0 else "PUNKTY -"
-	dealer_score_label.text = "PUNKTY ?" if engine.is_round_active and engine.dealer_hand.cards.size() > 1 else ("PUNKTY %d" % dealer_value if dealer_value > 0 else "PUNKTY -")
+	player_score_label.text = "SCORE %d" % player_value if player_value > 0 else "SCORE -"
+	dealer_score_label.text = "SCORE ?" if engine.is_round_active and engine.dealer_hand.cards.size() > 1 else ("SCORE %d" % dealer_value if dealer_value > 0 else "SCORE -")
 
 	_render_cards(player_cards_root, engine.player_hand, false)
 	_render_cards(dealer_cards_root, engine.dealer_hand, engine.is_round_active)
@@ -531,18 +531,18 @@ func _get_result_text(result: String) -> String:
 		BlackjackResult.PLAYER_BLACKJACK:
 			return "Blackjack."
 		BlackjackResult.DEALER_BLACKJACK:
-			return "Blackjack krupiera."
+			return "Dealer blackjack."
 		BlackjackResult.PLAYER_WIN:
-			return "Wygrywasz."
+			return "You win."
 		BlackjackResult.DEALER_WIN:
-			return "Krupier wygrywa."
+			return "Dealer wins."
 		BlackjackResult.PUSH:
-			return "Remis."
+			return "Push."
 		BlackjackResult.PLAYER_BUST:
-			return "Przebijasz."
+			return "You bust."
 		BlackjackResult.DEALER_BUST:
-			return "Krupier przebija."
-	return "Runda rozliczona."
+			return "Dealer busts."
+	return "Round resolved."
 
 
 func _add_circuit_panel(center: Vector3, size: Vector2, complexity: int) -> void:

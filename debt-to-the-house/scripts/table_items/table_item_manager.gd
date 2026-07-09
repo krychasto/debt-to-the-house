@@ -135,7 +135,7 @@ func _build_rack() -> void:
 	_rack_panel.add_child(box)
 
 	_rack_title = Label.new()
-	_rack_title.text = "RELIKWIE"
+	_rack_title.text = "RELICS"
 	_rack_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_rack_title.add_theme_font_size_override("font_size", 10)
 	_rack_title.add_theme_color_override("font_color", Color(0.60, 1.0, 0.96, 0.74))
@@ -374,7 +374,7 @@ func _get_item_definitions() -> Dictionary:
 		"lucky_coin": {
 			"id": "lucky_coin",
 			"display_name": "Lucky Coin",
-			"description": "Mała moneta leżąca przy panelu gracza.",
+			"description": "A small coin resting near the player's panel.",
 			"slot_type": TableItemSlot.PLAYER_AREA,
 			"idle_animation": "rotate",
 			"activation_animation": "spin",
@@ -385,7 +385,7 @@ func _get_item_definitions() -> Dictionary:
 		"whiskey_flask": {
 			"id": "whiskey_flask",
 			"display_name": "Whiskey Flask",
-			"description": "Płaska butelka z ciemnego metalu.",
+			"description": "A flat flask made of dark metal.",
 			"slot_type": TableItemSlot.BOTTOM_PANEL,
 			"idle_animation": "sway",
 			"activation_animation": "pop",
@@ -396,7 +396,7 @@ func _get_item_definitions() -> Dictionary:
 		"loaded_dice": {
 			"id": "loaded_dice",
 			"display_name": "Loaded Dice",
-			"description": "Para podejrzanie ciężkich kostek.",
+			"description": "A pair of suspiciously heavy dice.",
 			"slot_type": TableItemSlot.CENTER_RIGHT,
 			"idle_animation": "rotate",
 			"activation_animation": "spin",
@@ -407,7 +407,7 @@ func _get_item_definitions() -> Dictionary:
 		"robot_eye": {
 			"id": "robot_eye",
 			"display_name": "Robot Eye",
-			"description": "Cybernetyczne oko obserwujące krupiera.",
+			"description": "A cybernetic eye watching the dealer.",
 			"slot_type": TableItemSlot.DEALER_AREA,
 			"idle_animation": "blink",
 			"activation_animation": "flash",
@@ -418,7 +418,7 @@ func _get_item_definitions() -> Dictionary:
 		"broken_clock": {
 			"id": "broken_clock",
 			"display_name": "Broken Clock",
-			"description": "Pęknięty zegarek, który rozciąga zasady czasu i wyniku.",
+			"description": "A cracked watch that stretches the rules of time and score.",
 			"slot_type": TableItemSlot.CENTER_LEFT,
 			"idle_animation": "sway",
 			"activation_animation": "pop",
@@ -429,7 +429,7 @@ func _get_item_definitions() -> Dictionary:
 		"golden_card": {
 			"id": "golden_card",
 			"display_name": "Golden Card",
-			"description": "Złota karta z wygrawerowanym symbolem blackjacka.",
+			"description": "A golden card engraved with the mark of blackjack.",
 			"slot_type": TableItemSlot.TOP_PANEL,
 			"idle_animation": "float",
 			"activation_animation": "flash",
@@ -440,7 +440,7 @@ func _get_item_definitions() -> Dictionary:
 		"hologram_projector": {
 			"id": "hologram_projector",
 			"display_name": "Hologram Projector",
-			"description": "Mały projektor migoczący nad powierzchnią stołu.",
+			"description": "A small projector flickering above the table surface.",
 			"slot_type": TableItemSlot.RIGHT_PANEL,
 			"idle_animation": "projector",
 			"activation_animation": "flash",

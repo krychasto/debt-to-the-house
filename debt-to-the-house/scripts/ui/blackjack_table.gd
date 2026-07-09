@@ -136,7 +136,7 @@ func _build_ui() -> void:
 	table_area_root.add_theme_constant_override("separation", 8)
 	root.add_child(table_area_root)
 
-	var dealer_panel := _build_hand_panel("Krupier", true)
+	var dealer_panel := _build_hand_panel("Dealer", true)
 	table_area_root.add_child(dealer_panel)
 
 	var center_panel := PanelContainer.new()
@@ -147,7 +147,7 @@ func _build_ui() -> void:
 	table_area_root.add_child(center_panel)
 
 	message_label = Label.new()
-	message_label.text = "Ustaw stawkę i rozdaj."
+	message_label.text = "Set your bet and deal."
 	message_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	message_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	message_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -158,7 +158,7 @@ func _build_ui() -> void:
 	message_label.custom_minimum_size = Vector2(0, 36)
 	center_panel.add_child(message_label)
 
-	var player_panel := _build_hand_panel("Gracz", false)
+	var player_panel := _build_hand_panel("Player", false)
 	table_area_root.add_child(player_panel)
 
 	root.add_child(_build_controls())
@@ -183,7 +183,7 @@ func _build_header() -> Control:
 	title_panel.add_child(title_box)
 
 	var title := Label.new()
-	title.text = "Dług wobec Kasyna"
+	title.text = "Debt to the House"
 	title.add_theme_font_size_override("font_size", 24)
 	title.add_theme_color_override("font_outline_color", Color(0.02, 0.00, 0.03, 0.95))
 	title.add_theme_constant_override("outline_size", 6)
@@ -193,15 +193,15 @@ func _build_header() -> Control:
 	stage_label.add_theme_font_size_override("font_size", 12)
 	title_box.add_child(stage_label)
 
-	var money_card := _create_stat_card("KASA", GOLD, -1.0)
+	var money_card := _create_stat_card("MONEY", GOLD, -1.0)
 	money_label = money_card.get_node("Box/Value") as Label
 	header.add_child(money_card)
 
-	var hands_card := _create_stat_card("ROZDANIA", CYAN, 0.8)
+	var hands_card := _create_stat_card("HANDS", CYAN, 0.8)
 	hands_label = hands_card.get_node("Box/Value") as Label
 	header.add_child(hands_card)
 
-	var debt_card := _create_stat_card("DŁUG", PINK, -0.6)
+	var debt_card := _create_stat_card("DEBT", PINK, -0.6)
 	debt_label = debt_card.get_node("Box/Value") as Label
 	header.add_child(debt_card)
 
@@ -318,7 +318,7 @@ func _build_reward_panel() -> Control:
 	reward_panel.add_child(box)
 
 	var title := Label.new()
-	title.text = "Wybierz relikt"
+	title.text = "Choose a relic"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 16)
 	box.add_child(title)
@@ -363,7 +363,7 @@ func _build_reward_overlay() -> Control:
 	margin.add_child(box)
 
 	var title := Label.new()
-	title.text = "WYBIERZ RELIKT"
+	title.text = "CHOOSE A RELIC"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 42)
 	title.add_theme_color_override("font_color", GOLD)
@@ -378,7 +378,7 @@ func _build_reward_overlay() -> Control:
 
 	reward_message_label = Label.new()
 	reward_message_label.visible = false
-	reward_message_label.text = "RELIKT ZDOBYTY"
+	reward_message_label.text = "RELIC ACQUIRED"
 	reward_message_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	reward_message_label.add_theme_font_size_override("font_size", 30)
 	reward_message_label.add_theme_color_override("font_color", CYAN)
@@ -507,29 +507,29 @@ func _format_relic_tags(tags: Array[String]) -> String:
 func _get_tag_label(tag: String) -> String:
 	match tag:
 		"ace":
-			return "as"
+			return "ace"
 		"dealer":
-			return "krupier"
+			return "dealer"
 		"money":
-			return "kasa"
+			return "money"
 		"risk":
 			return "ryzyko"
 		"blackjack":
 			return "blackjack"
 		"king":
-			return "król"
+			return "king"
 		"queen":
-			return "dama"
+			return "queen"
 		"bust":
-			return "przebicie"
+			return "bust"
 		"token":
-			return "żeton"
+			return "token"
 		"target_score":
 			return "limit"
 		"payout":
-			return "wypłata"
+			return "payout"
 		"safety":
-			return "bezpieczny"
+			return "safety"
 
 	return tag
 
@@ -636,7 +636,7 @@ func _build_controls() -> Control:
 	controls.add_child(bet_controls)
 
 	var bet_label := Label.new()
-	bet_label.text = "STAWKA"
+	bet_label.text = "BET"
 	bet_label.add_theme_font_size_override("font_size", 16)
 	bet_label.add_theme_color_override("font_color", GOLD)
 	bet_label.add_theme_color_override("font_outline_color", INK)
@@ -673,26 +673,26 @@ func _build_controls() -> Control:
 	action_controls.add_theme_constant_override("separation", 8)
 	controls.add_child(action_controls)
 
-	deal_button = _create_action_button("ROZDAJ", GOLD, Color(0.20, 0.07, 0.12))
+	deal_button = _create_action_button("DEAL", GOLD, Color(0.20, 0.07, 0.12))
 	deal_button.custom_minimum_size = Vector2(148, 48)
 	deal_button.add_theme_font_size_override("font_size", 18)
 	deal_button.rotation_degrees = -1.0
 	deal_button.pressed.connect(_on_deal_pressed)
 	action_controls.add_child(deal_button)
 
-	hit_button = _create_action_button("DOBIERZ", CYAN, Color(0.03, 0.12, 0.14))
+	hit_button = _create_action_button("HIT", CYAN, Color(0.03, 0.12, 0.14))
 	hit_button.custom_minimum_size = Vector2(104, 40)
 	hit_button.rotation_degrees = 0.6
 	hit_button.pressed.connect(_on_hit_pressed)
 	action_controls.add_child(hit_button)
 
-	stand_button = _create_action_button("STÓJ", PINK, Color(0.16, 0.04, 0.13))
+	stand_button = _create_action_button("STAND", PINK, Color(0.16, 0.04, 0.13))
 	stand_button.custom_minimum_size = Vector2(104, 40)
 	stand_button.rotation_degrees = -0.6
 	stand_button.pressed.connect(_on_stand_pressed)
 	action_controls.add_child(stand_button)
 
-	retry_button = _create_action_button("OD NOWA", Color(0.94, 0.94, 1.0), Color(0.09, 0.08, 0.12))
+	retry_button = _create_action_button("RETRY", Color(0.94, 0.94, 1.0), Color(0.09, 0.08, 0.12))
 	retry_button.rotation_degrees = 1.0
 	retry_button.pressed.connect(_on_retry_pressed)
 	action_controls.add_child(retry_button)
@@ -1053,7 +1053,7 @@ func _debug_advance_stage() -> void:
 	run_manager.rebuild_effective_state(engine.rules)
 	engine.reset_round()
 	_clear_bet_chips()
-	message_label.text = "DEBUG: Etap %d" % run_manager.stage
+	message_label.text = "DEBUG: Stage %d" % run_manager.stage
 	print("[Debug] force next stage=%d" % run_manager.stage)
 	_update_ui()
 
@@ -1073,7 +1073,7 @@ func _debug_clear_combo() -> void:
 	run_manager.combo_count = 0
 	run_manager.last_combo_delta = 0
 	run_manager.last_combo_was_reset = true
-	message_label.text = "DEBUG: combo wyczyszczone"
+	message_label.text = "DEBUG: combo cleared"
 	print("[Debug] clear combo")
 	_update_ui()
 
@@ -1101,14 +1101,14 @@ func _on_deal_pressed() -> void:
 	var bet := int(bet_input.value)
 
 	if not run_manager.start_hand(bet):
-		message_label.text = "Nie możesz zagrać z taką stawką."
+		message_label.text = "You cannot play with that bet."
 		_update_ui()
 		return
 
 	_throw_bet_chips(bet)
 	engine.start_round(bet)
 	should_hide_dealer_hole = true
-	message_label.text = "Twój ruch."
+	message_label.text = "Your move."
 
 	var opening_result := engine.resolve_round() if _has_opening_blackjack() else ""
 	if opening_result != "":
@@ -1125,7 +1125,7 @@ func _on_hit_pressed() -> void:
 		should_hide_dealer_hole = false
 		_apply_round_result(result)
 	else:
-		message_label.text = "Karta dobrana. Dobierz albo stój."
+		message_label.text = "Card drawn. Hit or stand."
 
 	_update_ui()
 
@@ -1137,13 +1137,13 @@ func _on_stand_pressed() -> void:
 	is_dealer_sequence_playing = true
 	should_hide_dealer_hole = false
 	should_animate_dealer_reveal = true
-	message_label.text = "Krupier odkrywa kartę."
+	message_label.text = "Dealer reveals the card."
 	_update_ui()
 	await get_tree().create_timer(0.42).timeout
 
 	while engine.is_round_active and engine.dealer_hand.get_value(engine.rules) < engine.rules.dealer_stand_score:
 		engine.dealer_hand.add_card(engine.deck.draw_card())
-		message_label.text = "Krupier dobiera."
+		message_label.text = "Dealer draws."
 		_update_ui()
 		await get_tree().create_timer(0.38).timeout
 
@@ -1205,13 +1205,13 @@ func _complete_reward_choice(relic: RelicData) -> void:
 	reward_overlay.visible = false
 	reward_message_label.visible = false
 	if run_manager.is_stage_success():
-		message_label.text = "DŁUG SPŁACONY"
+		message_label.text = "DEBT PAID"
 		print("[Debug] stage success remains after reward stage=%d money=%d debt=%d" % [run_manager.stage, run_manager.money, run_manager.debt_target])
 		_update_ui()
 		_start_stage_clear_feedback()
 		return
 
-	message_label.text = "%s zdobyty. Etap %d." % [relic.display_name, run_manager.stage]
+	message_label.text = "%s acquired. Stage %d." % [relic.display_name, run_manager.stage]
 	_update_ui()
 
 
@@ -1232,7 +1232,7 @@ func _on_retry_pressed() -> void:
 		background_shade.color = Color(0.04, 0.00, 0.07, 0.08)
 	if is_instance_valid(table_item_manager):
 		table_item_manager.clear_items()
-	message_label.text = "Nowy run. Ustaw stawkę i rozdaj."
+	message_label.text = "New run. Set your bet and deal."
 	_update_ui()
 
 
@@ -1245,14 +1245,14 @@ func _apply_round_result(result: String) -> void:
 	var combo_before := run_manager.combo_count
 	var payout := run_manager.apply_result(result, engine.current_bet, engine.rules)
 	var money_delta := run_manager.money - money_before_payout
-	message_label.text = "Następne rozdanie."
+	message_label.text = "Next hand."
 
 	var stage_cleared := run_manager.is_stage_success()
 	var game_lost := run_manager.is_game_over()
 	if stage_cleared:
-		message_label.text = "Wybierz relikt."
+		message_label.text = "Choose a relic."
 	elif game_lost:
-		message_label.text = "Run zakończony."
+		message_label.text = "Run ended."
 
 	_spawn_money_popup(money_delta)
 	_play_combo_feedback(combo_before)
@@ -1359,7 +1359,7 @@ func _play_new_synergy_feedback() -> void:
 		return
 
 	for synergy: SynergyData in run_manager.newly_discovered_synergies:
-		var title := "SYNERGIA: %s" % synergy.display_name
+		var title := "SYNERGY: %s" % synergy.display_name
 		var popup_position := Vector2(136.0, size.y * 0.86)
 		JuiceManager.play_combo_popup(self, title, popup_position)
 		if is_instance_valid(synergy_panel):
@@ -1533,7 +1533,7 @@ func _create_empty_slot() -> Control:
 	slot.add_theme_stylebox_override("panel", _make_style(Color(0.0, 0.0, 0.0, 0.0), Color(1.0, 1.0, 1.0, 0.0), 0, 8))
 
 	var label := Label.new()
-	label.text = "Brak kart"
+	label.text = "No cards"
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	label.add_theme_font_size_override("font_size", 13)
@@ -1728,28 +1728,28 @@ func _get_result_text(result: String) -> String:
 		BlackjackResult.PLAYER_BLACKJACK:
 			return "Blackjack."
 		BlackjackResult.DEALER_BLACKJACK:
-			return "Krupier ma blackjacka."
+			return "Dealer has blackjack."
 		BlackjackResult.PLAYER_WIN:
-			return "Wygrywasz."
+			return "You win."
 		BlackjackResult.DEALER_WIN:
-			return "Krupier wygrywa."
+			return "Dealer wins."
 		BlackjackResult.PUSH:
-			return "Remis."
+			return "Push."
 		BlackjackResult.PLAYER_BUST:
-			return "Przebijasz."
+			return "You bust."
 		BlackjackResult.DEALER_BUST:
-			return "Krupier przebija. Wygrywasz."
+			return "Dealer busts. You win."
 
-	return "Runda rozliczona."
+	return "Round resolved."
 
 
 func _get_loss_burst_text(result: String) -> String:
 	match result:
 		BlackjackResult.PLAYER_BUST:
-			return "PRZEBICIE"
+			return "BUST"
 		BlackjackResult.DEALER_BLACKJACK:
-			return "BLACKJACK KASYNA"
+			return "HOUSE BLACKJACK"
 		BlackjackResult.DEALER_WIN:
-			return "KASYNO WYGRYWA"
+			return "HOUSE WINS"
 
-	return "PORAŻKA"
+	return "LOSS"
