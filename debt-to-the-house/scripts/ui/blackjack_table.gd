@@ -265,7 +265,7 @@ func _create_stat_card(caption: String, accent_color: Color, tilt: float) -> Pan
 	return panel
 
 
-func _build_hand_panel(title: String, is_dealer: bool) -> Control:
+func _build_hand_panel(_title: String, is_dealer: bool) -> Control:
 	var panel := PanelContainer.new()
 	panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	panel.add_theme_stylebox_override("panel", _make_style(Color(0.0, 0.0, 0.0, 0.0), Color(1.0, 1.0, 1.0, 0.0), 0, 8))
@@ -278,14 +278,9 @@ func _build_hand_panel(title: String, is_dealer: bool) -> Control:
 	top_row.add_theme_constant_override("separation", 6)
 	box.add_child(top_row)
 
-	var name_label := Label.new()
-	name_label.text = title.to_upper()
-	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	name_label.add_theme_font_size_override("font_size", 17)
-	name_label.add_theme_color_override("font_color", Color(0.93, 1.0, 0.97))
-	name_label.add_theme_color_override("font_outline_color", Color(0.02, 0.00, 0.03, 0.95))
-	name_label.add_theme_constant_override("outline_size", 5)
-	top_row.add_child(name_label)
+	var score_spacer := Control.new()
+	score_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	top_row.add_child(score_spacer)
 
 	var score_label := Label.new()
 	score_label.custom_minimum_size = Vector2(92, 42)
