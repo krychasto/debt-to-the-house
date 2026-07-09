@@ -1,6 +1,42 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://scripts/ui/game_hud.gd" id="1_game_hud"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_money_panel"]
+bg_color = Color(0.015, 0.025, 0.04, 0.66)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.18, 0.94, 0.88, 0.62)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+content_margin_left = 10.0
+content_margin_top = 6.0
+content_margin_right = 10.0
+content_margin_bottom = 6.0
+shadow_color = Color(0.18, 0.94, 0.88, 0.14)
+shadow_size = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_debt_track"]
+bg_color = Color(0.04, 0.06, 0.08, 0.72)
+corner_radius_top_left = 2
+corner_radius_top_right = 2
+corner_radius_bottom_right = 2
+corner_radius_bottom_left = 2
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_debt_fill"]
+bg_color = Color(0.74, 0.34, 1, 1)
+corner_radius_top_left = 2
+corner_radius_top_right = 2
+corner_radius_bottom_right = 2
+corner_radius_bottom_left = 2
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_progress"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_focus"]
 
 [node name="GameHud" type="Control"]
 layout_mode = 3
@@ -11,3 +47,99 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("1_game_hud")
+
+[node name="TopBar" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 1.0
+offset_left = 22.0
+offset_top = 14.0
+offset_right = -58.0
+offset_bottom = 74.0
+mouse_filter = 2
+theme_override_constants/separation = 12
+
+[node name="MoneyPanel" type="PanelContainer" parent="TopBar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(178, 58)
+layout_mode = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_money_panel")
+
+[node name="Box" type="VBoxContainer" parent="TopBar/MoneyPanel"]
+layout_mode = 2
+mouse_filter = 2
+alignment = 1
+
+[node name="Title" type="Label" parent="TopBar/MoneyPanel/Box"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.6, 0.8, 0.84, 1)
+theme_override_colors/font_outline_color = Color(0, 0.01, 0.02, 0.95)
+theme_override_constants/outline_size = 2
+theme_override_font_sizes/font_size = 10
+text = "MONEY"
+horizontal_alignment = 1
+
+[node name="MoneyValue" type="Label" parent="TopBar/MoneyPanel/Box"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.92, 1, 0.97, 1)
+theme_override_colors/font_outline_color = Color(0, 0.01, 0.02, 0.95)
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 31
+text = "$0"
+horizontal_alignment = 1
+
+[node name="DebtGroup" type="VBoxContainer" parent="TopBar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(208, 54)
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 3
+
+[node name="DebtTitle" type="Label" parent="TopBar/DebtGroup"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.6, 0.8, 0.84, 1)
+theme_override_colors/font_outline_color = Color(0, 0.01, 0.02, 0.95)
+theme_override_constants/outline_size = 2
+theme_override_font_sizes/font_size = 10
+text = "DEBT"
+
+[node name="DebtValue" type="Label" parent="TopBar/DebtGroup"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.92, 1, 0.97, 1)
+theme_override_colors/font_outline_color = Color(0, 0.01, 0.02, 0.95)
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 16
+text = "$0 / $0"
+
+[node name="DebtProgress" type="ProgressBar" parent="TopBar/DebtGroup"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(208, 7)
+layout_mode = 2
+mouse_filter = 2
+theme_override_styles/background = SubResource("StyleBoxFlat_debt_track")
+theme_override_styles/fill = SubResource("StyleBoxFlat_debt_fill")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
+theme_override_styles/panel = SubResource("StyleBoxEmpty_progress")
+max_value = 100.0
+value = 0.0
+show_percentage = false
+
+[node name="Spacer" type="Control" parent="TopBar"]
+layout_mode = 2
+mouse_filter = 2
+size_flags_horizontal = 3
+
+[node name="RunStatusLine" type="Label" parent="TopBar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(330, 38)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.92, 1, 0.97, 1)
+theme_override_colors/font_outline_color = Color(0, 0.01, 0.02, 0.95)
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 15
+text = "Stage 1 • Hands 0 • Combo x0 • 🪙 0"
+horizontal_alignment = 2
+vertical_alignment = 1
